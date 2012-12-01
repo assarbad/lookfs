@@ -24,178 +24,18 @@
 
 class CAlternateDataStreams
 {
-    template <typename T> class CVerySimpleBuf
-    {
-    public:
-        CVerySimpleBuf(size_t count = 0)
-            : m_buf(0)
-            , m_count(0)
-        {
-            reAlloc(count);
-        }
-
-        CVerySimpleBuf(const CVerySimpleBuf& rval)
-            : m_buf(0)
-            , m_count(0)
-        {
-            operator=(rval);
-        }
-
-        CVerySimpleBuf(const T* buf)
-            : m_buf(0)
-            , m_count(0)
-        {
-            if(buf)
-            {
-                operator=(buf);
-            }
-        }
-
-        ~CVerySimpleBuf()
-        {
-            delete[] m_buf;
-        }
-
-        CVerySimpleBuf& operator=(const CVerySimpleBuf& rval)
-        {
-            if(&rval != this)
-            {
-                reAlloc(0);
-                if(rval.getBuf() && reAlloc(rval.getCount()))
-                {
-                    memcpy(getBuf(), rval.getBuf(), getMin_(getByteCount(), rval.getByteCount()));
-                }
-            }
-            return *this;
-        }
-
-        CVerySimpleBuf& operator=(const T* buf)
-        {
-            reAlloc(0);
-            if(buf)
-            {
-                const size_t len = getBufLenZ_<const T*>(buf);
-                if(!len)
-                {
-                    reAlloc(1);
-                }
-                else if(reAlloc(len))
-                {
-                    memcpy(getBuf(), buf, getMin_(sizeof(T) * len, getByteCount()));
-                }
-            }
-            return *this;
-        }
-
-        CVerySimpleBuf& operator+=(const CVerySimpleBuf& rval)
-        {
-            if(rval.getCountZ() && reAlloc(getCountZ() + rval.getCountZ()))
-            {
-                memcpy(getBuf() + getCountZ(), rval.getBuf(), sizeof(T) * rval.getCountZ());
-            }
-            return *this;
-        }
-
-        CVerySimpleBuf& operator+=(const T* buf)
-        {
-            const size_t len = getBufLenZ_<const T*>(buf);
-            if(len && reAlloc(getCountZ() + len))
-            {
-                memcpy(getBuf() + getCountZ(), buf, sizeof(T) * len);
-            }
-            return *this;
-        }
-
-        inline T* getBuf() const
-        {
-            return m_buf;
-        };
-
-        inline operator bool() const
-        {
-            return (0 != m_buf);
-        }
-
-        inline bool operator!() const
-        {
-            return (0 != m_buf);
-        }
-
-        void clear()
-        {
-            if(m_buf)
-            {
-                memset(m_buf, 0, m_count * sizeof(T));
-            }
-        }
-
-        bool reAlloc(size_t count)
-        {
-            T* tempBuf = 0;
-            size_t count_ = 0;
-            if(count)
-            {
-                count_ = getCeil_(count+1);
-                if(count_ <= m_count)
-                {
-                    memset(m_buf + count, 0, sizeof(T) * (m_count - count));
-                    return true;
-                }
-                if(0 != (tempBuf = new T[count_]))
-                {
-                    memset(tempBuf, 0, sizeof(T) * count_);
-                }
-                if(tempBuf && m_buf)
-                {
-                    memcpy(tempBuf, m_buf, sizeof(T) * getMin_(count, m_count));
-                }
-            }
-            delete[] m_buf;
-            m_buf = tempBuf;
-            m_count = count_;
-            return (0 != m_buf);
-        }
-
-        inline size_t getCount() const
-        {
-            return m_count;
-        }
-
-        inline size_t getCountZ() const
-        {
-            return getBufLenZ_<const T*>(m_buf);
-        }
-
-        inline size_t getByteCount() const
-        {
-            return m_count * sizeof(T);
-        }
-    protected:
-        T* m_buf;
-        size_t m_count;
-
-        inline size_t getCeil_(size_t count) const
-        {
-            const size_t align = sizeof(void*);
-            return (((sizeof(T) * count) + (align - 1)) & (~(align - 1))) / sizeof(T);
-        }
-
-        inline size_t getMin_(size_t a, size_t b) const
-        {
-            return ((a < b) ? a : b);
-        }
-
-        template <typename T> static size_t getBufLenZ_(const char* val)
-        {
-            return (val) ? strlen(val) : 0;
-        }
-
-        template <typename T> static size_t getBufLenZ_(const wchar_t* val)
-        {
-            return (val) ? wcslen(val) : 0;
-        }
-    };
-
+public:
+    // Allow the header to be included again outside of this file
+    // Still this header needs to be included before anyone else who requires VerySimpleBuf.h
+#   define __VERYSIMPLEBUF_MULTI_INC__
+#   include "VerySimpleBuf.h"
+#   undef __VERYSIMPLEBUF_H_VER__
+    // Just make it more readable
+    typedef CVerySimpleBuf<WCHAR> CWideString, *PWideString;
+    typedef CVerySimpleBuf<CHAR>  CAnsiString, *PAnsiString;
+    typedef CVerySimpleBuf<TCHAR> CTString, *PTString;
+    typedef CVerySimpleBuf<BYTE>  ByteBuf;
+private:
     // Stuff we need to talk to NTDLL
     typedef LONG NTSTATUS;
 
@@ -284,9 +124,6 @@ class CAlternateDataStreams
     static const DWORD dwAllocIncrement = 0x400;
 
 public:
-    // Just make it more readable
-    typedef CVerySimpleBuf<WCHAR> CWideString, *PWideString;
-
     CAlternateDataStreams(WCHAR const* Path)
         : m_Path(normalizePath_(Path))
         , m_Attr(::GetFileAttributesW(m_Path.getBuf()))
