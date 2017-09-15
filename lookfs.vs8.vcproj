@@ -373,6 +373,10 @@
 			Filter=""
 			>
 			<File
+				RelativePath="AlternateDataStreams.hpp"
+				>
+			</File>
+			<File
 				RelativePath="FileAttributes.h"
 				>
 			</File>
@@ -400,6 +404,19 @@
 				RelativePath="lookfs.hpp"
 				>
 			</File>
+			<Filter
+				Name="simpleopt"
+				Filter=""
+				>
+				<File
+					RelativePath="thirdparty\simpleopt\SimpleGlob.h"
+					>
+				</File>
+				<File
+					RelativePath="thirdparty\simpleopt\SimpleOpt.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Resource Files"

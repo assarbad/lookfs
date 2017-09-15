@@ -242,7 +242,7 @@ solution (tgtname .. iif(release, "_release", ""))
 
         files
         {
-            "ntdll-stubs/*.txt",
+            "thirdparty/simpleopt/*.h",
             "*.rc",
             "*.cpp",
             "*.h",
@@ -254,6 +254,7 @@ solution (tgtname .. iif(release, "_release", ""))
         vpaths
         {
             ["Header Files/*"] = { "*.h", "*.hpp" },
+            ["Header Files/simpleopt/*"] = { "thirdparty/simpleopt/*.h" },
             ["Source Files/*"] = { "*.cpp" },
             ["Resource Files/*"] = { "*.rc" },
             ["Special Files/*"] = { "**.cmd", "premake4.lua", "*.rst", "*.txt", },
@@ -286,14 +287,6 @@ solution (tgtname .. iif(release, "_release", ""))
             defines         {"_DEBUG"}
             flags           {"Symbols",}
 
---[[
-        configuration {"x64"}
-            prebuildcommands{"lib.exe /nologo /nodefaultlib \"/def:ntdll-stubs\\ntdll-delayed.txt\" \"/out:$(IntDir)\\ntdll-delayed.lib\" /machine:x64", "\"$(ProjectDir)\\hgid.cmd\""}
-
-        configuration {"x32"}
-            prebuildcommands{"cl.exe /nologo /c /TC /Ob0 /Gz ntdll-stubs\\ntdll-delayed-stubs.c \"/Fo$(IntDir)\\ntdll-delayed-stubs.obj\"", "lib.exe /nologo \"/def:ntdll-stubs\\ntdll-delayed.txt\" \"/out:$(IntDir)\\ntdll-delayed.lib\" /machine:x86 \"$(IntDir)\\ntdll-delayed-stubs.obj\"", "\"$(ProjectDir)\\hgid.cmd\""}
---]]
-
         configuration {"Release"}
             defines         {"NDEBUG"}
             flags           {"Optimize", "Symbols", "NoMinimalRebuild", "NoIncrementalLink", "NoEditAndContinue"}
@@ -313,7 +306,7 @@ solution (tgtname .. iif(release, "_release", ""))
             linkoptions     {"/subsystem:console,5.02"}
 
         configuration {"vs2013 or vs2015 or vs2017"}
-            defines         {"WINVER=0x0501"}
+            defines         {"WINVER=0x0501", "_ALLOW_RTCc_IN_STL"}
 
         configuration {"vs2002 or vs2003 or vs2005 or vs2008 or vs2010 or vs2012", "x32"}
             defines         {"WINVER=0x0500"}

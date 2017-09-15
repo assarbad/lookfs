@@ -25,3 +25,5 @@ hgid.h
 buildlog.html
 *.7z
 *.7z.asc
+*.vlconfig
+.vs/**

@@ -13,7 +13,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef __REPARSEPOINT_H_VER__
-#define __REPARSEPOINT_H_VER__ 2017091518
+#define __REPARSEPOINT_H_VER__ 2017091520
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
 #endif // Check for "#pragma once" support
@@ -241,7 +241,7 @@ private:
     void cacheValues_()
     {
         // WCHAR const Win32Prefix[] = WIN32_UNICODE_PREFIX;
-        WCHAR const* NativePrefix = L"\\??\\";
+        WCHAR const NativePrefix[] = L"\\??\\";
         HANDLE hFile = ::CreateFile(m_Path.getBuf(), FILE_READ_EA, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, m_OpenFlags, 0);
         if(INVALID_HANDLE_VALUE != hFile)
         {

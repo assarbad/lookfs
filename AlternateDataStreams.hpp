@@ -1,9 +1,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 ///
-/// Written 2010, 2012, Oliver Schneider (assarbad.net) - PUBLIC DOMAIN/CC0
+/// Written by Oliver Schneider (assarbad.net) - PUBLIC DOMAIN/CC0
 ///
 /// Original filename: AlternateDataStreams.h
-/// Project          : lsads
+/// Project          : lookfs
 /// Date of creation : 2010-01-26
 /// Author(s)        : Oliver Schneider
 ///
@@ -11,7 +11,7 @@
 ///
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef __ALTERNATEDATASTREAMS_H_VER__
-#define __ALTERNATEDATASTREAMS_H_VER__ 2017091421
+#define __ALTERNATEDATASTREAMS_H_VER__ 2017091520
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
 #endif // Check for "#pragma once" support
