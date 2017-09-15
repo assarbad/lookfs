@@ -106,4 +106,26 @@
 #define IO_REPARSE_TAG_GVFS_TOMBSTONE           (0xA0000022L)
 #endif // IO_REPARSE_TAG_GVFS_TOMBSTONE
 
+/* Reparse tags from MS-FSCC */
+
+#ifndef IO_REPARSE_TAG_RESERVED_ZERO
+/* Reserved reparse tag value */
+#define IO_REPARSE_TAG_RESERVED_ZERO            (0x00000000L)
+#endif // IO_REPARSE_TAG_RESERVED_ZERO
+
+#ifndef IO_REPARSE_TAG_RESERVED_ONE
+/* Reserved reparse tag value */
+#define IO_REPARSE_TAG_RESERVED_ONE             (0x00000001L)
+#endif // IO_REPARSE_TAG_RESERVED_ONE
+
+#ifndef IO_REPARSE_TAG_DRIVER_EXTENDER
+/* Home server drive extender */
+#define IO_REPARSE_TAG_DRIVER_EXTENDER          (0x80000005L)
+#endif // IO_REPARSE_TAG_DRIVER_EXTENDER
+
+#ifndef IO_REPARSE_TAG_FILTER_MANAGER
+/* Used by filter manager test harness */
+#define IO_REPARSE_TAG_FILTER_MANAGER           (0x8000000BL)
+#endif // IO_REPARSE_TAG_FILTER_MANAGER
+
 #endif // __REPARSETAGS_H_VER__

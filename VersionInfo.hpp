@@ -29,7 +29,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef __VERSIONINFO_H_VER__
-#define __VERSIONINFO_H_VER__ 2017091422
+#define __VERSIONINFO_H_VER__ 2017091521
 #if (defined(_MSC_VER) && (_MSC_VER >= 1020)) || defined(__MCPP)
 #pragma once
 #endif // Check for "#pragma once" support
@@ -59,7 +59,7 @@ public:
                 {
                     if (LPVOID pVerInfoRO = ::LockResource(hVersionResourceData))
                     {
-                        if (NULL != (m_lpVerInfo = ::LocalAlloc(LMEM_FIXED, dwSize)))
+                        if (NULL != (m_lpVerInfo = ::LocalAlloc(LPTR, dwSize)))
                         {
                             ::CopyMemory(m_lpVerInfo, pVerInfoRO, dwSize);
                             UINT uLen;
@@ -108,11 +108,12 @@ public:
     virtual ~CVersionInfo()
     {
         ::LocalFree(m_lpVerInfo);
+        m_lpVerInfo = NULL;
     }
 
     LPCTSTR operator[](LPCTSTR lpszKey) const
     {
-        if (!lpszKey)
+        if (!m_lpVerInfo || !lpszKey)
         {
             return NULL;
         }
@@ -122,7 +123,6 @@ public:
             return NULL;
         }
         TCHAR const fmtstr[] = _T("\\StringFileInfo\\%04X%04X\\%s");
-        //_tprintf(_T("Size of fmtstr = %d\n"), sizeof(fmtstr));
         size_t const fmtbuflen = sizeof(fmtstr)/sizeof(fmtstr[0]) + addend;
         TCHAR fullName[fmtbuflen] = {0};
         _stprintf_s(fullName, fmtbuflen, fmtstr, LOWORD(m_useTranslation), HIWORD(m_useTranslation), lpszKey);

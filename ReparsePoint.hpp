@@ -13,7 +13,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef __REPARSEPOINT_H_VER__
-#define __REPARSEPOINT_H_VER__ 2017091520
+#define __REPARSEPOINT_H_VER__ 2017091522
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
 #endif // Check for "#pragma once" support
@@ -26,6 +26,17 @@
 #include "FileAttributes.h"
 
 #define WIN32_UNICODE_PREFIX                    L"\\\\?\\"
+
+#ifndef SYMLINK_FLAG_FULLPATH
+/* The substitute name is a full path name. */
+#define SYMLINK_FLAG_FULLPATH 0x00000000
+#endif // SYMLINK_FLAG_FULLPATH
+
+#ifndef SYMLINK_FLAG_RELATIVE
+/* The substitute name is a path name relative to the directory containing the symbolic
+link. */
+#define SYMLINK_FLAG_RELATIVE 0x00000001
+#endif // SYMLINK_FLAG_RELATIVE
 
 class CReparsePoint
 {
