@@ -1,9 +1,9 @@
 @echo off
 setlocal ENABLEEXTENSIONS & pushd .
-set TGTNAME=looklink
+set TGTNAME=lookfs
 set PRJNAME=%TGTNAME%_release
 set SIGURL=https://bitbucket.org/assarbad/%TGTNAME%
-set SIGDESC=%TGTNAME%: Inspect Reparse Points
+set SIGDESC=%TGTNAME%: Inspects files and other file system artifacts
 premake4.exe --release vs2005
 call "%~dp0setvcvars.cmd" 2005
 :: premake4.exe --release --xp vs2017

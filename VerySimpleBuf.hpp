@@ -1,10 +1,10 @@
 ///////////////////////////////////////////////////////////////////////////////
 ///
-/// Written 2012, Oliver Schneider (assarbad.net) - PUBLIC DOMAIN/CC0
+/// Written by Oliver Schneider (assarbad.net) - PUBLIC DOMAIN/CC0
 ///
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef __VERYSIMPLEBUF_HPP_VER__
-#define __VERYSIMPLEBUF_HPP_VER__ 2017091422
+#define __VERYSIMPLEBUF_HPP_VER__ 2017091518
 #if !defined(__VERYSIMPLEBUF_MULTI_INC__) && ((defined(_MSC_VER) && (_MSC_VER >= 1020)) || defined(__MCPP))
 #pragma once
 #endif // Check for "#pragma once" support

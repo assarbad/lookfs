@@ -1,14 +1,14 @@
 ///////////////////////////////////////////////////////////////////////////////
 ///
-/// Written 2009-2013, Oliver Schneider (assarbad.net) - PUBLIC DOMAIN/CC0
+/// Written by Oliver Schneider (assarbad.net) - PUBLIC DOMAIN/CC0
 ///
-/// Original filename: looklink.cpp
-/// Project          : looklink
+/// Original filename: lookfs.cpp
+/// Project          : lookfs
 /// Date of creation : 2009-02-03
 /// Author(s)        : Oliver Schneider
 ///
-/// Purpose          : Program to investigate all kinds of reparse points on
-///                    Windows 2000 and later.
+/// Purpose          : Program to investigate all kinds of file system artifacts
+///                    on Windows 2000 and later.
 ///
 ///////////////////////////////////////////////////////////////////////////////
 #include <cstdio>
@@ -16,7 +16,7 @@
 #include <crtdbg.h>
 #endif // _DEBUG
 #include <tchar.h>
-#include "looklink.h"
+#include "lookfs.hpp"
 #include "VersionInfo.hpp"
 
 namespace {
@@ -189,7 +189,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
     }
     else
     {
-        _ftprintf(stderr, _T("Syntax:\n\tlooklink [--nologo] [--verbose] [--noerror] <path>\n"));
+        _ftprintf(stderr, _T("Syntax:\n\tlookfs [--nologo] [--verbose] [--noerror] <path>\n"));
     }
     return 1;
 }

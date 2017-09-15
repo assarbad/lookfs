@@ -1,5 +1,5 @@
 ﻿====================================
- ``CReparsePoint`` and ``looklink``
+ ``CReparsePoint`` and ``lookfs``
 ====================================
 :Author: Oliver Schneider
 
@@ -11,8 +11,8 @@ points, the mechanism underlying junction points since Windows 2000 and symbolic
 links (both for files and directories) since Windows Vista. It also supports
 placeholder files on Windows 8.1 and later.
 
-``looklink`` is a simple tool to investigate reparse point properties from the
-command line.
+``lookfs`` is a simple tool to investigate file system artifacts such as reparse
+points and alternate data streams the command line.
 
 Installation
 ------------
@@ -20,8 +20,8 @@ No installation required. Download the binaries (32 and 64bit) from `Bitbucket`_
 Use an archiver to unpack the archive, I recommend `7-Zip`_, and then place the
 ``.exe`` files into a folder listed in your ``PATH`` environment variable.
 
-As for the utility class all you need is to place the files ``ReparsePoint.h``
-and ``VerySimpleBuf.h`` into your project, ``#include`` the former and you
+As for the utility class all you need is to place the files ``ReparsePoint.hpp``
+and ``VerySimpleBuf.hpp`` into your project, ``#include`` the former and you
 should be set to use ``CReparsePoint``.
 
 Build instructions
@@ -70,7 +70,7 @@ Usage
 
 Syntax::
 
-    looklink [--nologo] [--verbose] [--noerror] <path>
+    lookfs [--nologo] [--verbose] [--noerror] <path>
 
 * ``--nologo`` will prevent showing all the information about the tool iself.
 * ``--verbose`` will add some details to the output, including the file ID on NTFS.
@@ -85,5 +85,5 @@ top of each source file. Anything not explicitly licensed in the source file can
 be assumed to have been placed into the PUBLIC DOMAIN/CC0.
 
 .. _premake4: https://bitbucket.org/windirstat/premake-stable/downloads/
-.. _Bitbucket: https://bitbucket.org/assarbad/looklink/downloads/
+.. _Bitbucket: https://bitbucket.org/assarbad/lookfs/downloads/
 .. _7-Zip: http://7-zip.org/

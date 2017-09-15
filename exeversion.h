@@ -6,7 +6,7 @@
 ///
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef __EXEVERSION_H_VER__
-#define __EXEVERSION_H_VER__ 2017091421
+#define __EXEVERSION_H_VER__ 2017091518
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -19,7 +19,7 @@
 // ---------------------------------------------------------------------------
 #define TEXT_AUTHOR            Oliver Schneider // author (optional value)
 #define PRD_MAJVER             1 // major product version
-#define PRD_MINVER             3 // minor product version
+#define PRD_MINVER             0 // minor product version
 #define PRD_PATCH              0 // patch number
 #define PRD_BUILD              HG_REV_NO // build number for product
 #define PRD_BUILD_NUMERIC      HG_REV_NO_NUMERIC // build number for product
@@ -28,15 +28,15 @@
 #define FILE_PATCH             PRD_PATCH // patch number
 #define FILE_BUILD             PRD_BUILD // build number
 #define FILE_BUILD_NUMERIC     PRD_BUILD_NUMERIC // build number for product
-#define EXE_YEAR               2009-2013, 2017 // current year or timespan (e.g. 2003-2007)
+#define EXE_YEAR               2017 // current year or timespan (e.g. 2003-2007)
 #define TEXT_WEBSITE           https:/##/assarbad.net // website
-#define TEXT_PRODUCTNAME       looklink // product's name
-#define TEXT_FILEDESC          Inspects reparse points of all kinds // component description
+#define TEXT_PRODUCTNAME       lookfs // product's name
+#define TEXT_FILEDESC          Inspects files and other file system artifacts // component description
 #define TEXT_COMPANY           Oliver Schneider (assarbad.net) // company
-#define TEXT_MODULE            looklink // module name
+#define TEXT_MODULE            lookfs // module name
 #define TEXT_COPYRIGHT         Written EXE_YEAR by TEXT_COMPANY (PUBLIC DOMAIN/CC0)
-#define TEXT_INTERNALNAME      looklink.exe
-#define HG_REPOSITORY          "https://bitbucket.org/assarbad/looklink"
+#define TEXT_INTERNALNAME      lookfs.exe
+#define HG_REPOSITORY          "https://bitbucket.org/assarbad/lookfs"
 
 
 #define _ANSISTRING(text) #text

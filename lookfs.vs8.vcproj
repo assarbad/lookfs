@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="looklink"
-	ProjectGUID="{BB5CC837-5B2C-4511-9BEC-83FF981C9295}"
-	RootNamespace="looklink"
+	Name="lookfs"
+	ProjectGUID="{659D3E1E-54E8-4B72-A40A-CD3A2C67D0B0}"
+	RootNamespace="lookfs"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -71,7 +71,7 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/delay:nobind /delayload:version.dll"
 				AdditionalDependencies="version.lib"
-				OutputFile="$(OutDir)\looklink32D.exe"
+				OutputFile="$(OutDir)\lookfs32D.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(IntDir);$(IntDir)"
 				GenerateDebugInformation="true"
@@ -157,7 +157,7 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/delay:nobind /delayload:version.dll"
 				AdditionalDependencies="version.lib"
-				OutputFile="$(OutDir)\looklink64D.exe"
+				OutputFile="$(OutDir)\lookfs64D.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(IntDir);$(IntDir)"
 				GenerateDebugInformation="true"
@@ -242,7 +242,7 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/delay:nobind /delayload:version.dll /release /subsystem:console,5.00 /opt:nowin98"
 				AdditionalDependencies="version.lib"
-				OutputFile="$(OutDir)\looklink32.exe"
+				OutputFile="$(OutDir)\lookfs32.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(IntDir);$(IntDir)"
 				GenerateDebugInformation="true"
@@ -330,7 +330,7 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/delay:nobind /delayload:version.dll /release /subsystem:console,5.02 /opt:nowin98"
 				AdditionalDependencies="version.lib"
-				OutputFile="$(OutDir)\looklink64.exe"
+				OutputFile="$(OutDir)\lookfs64.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(IntDir);$(IntDir)"
 				GenerateDebugInformation="true"
@@ -397,7 +397,7 @@
 				>
 			</File>
 			<File
-				RelativePath="looklink.h"
+				RelativePath="lookfs.hpp"
 				>
 			</File>
 		</Filter>
@@ -415,7 +415,7 @@
 			Filter=""
 			>
 			<File
-				RelativePath="looklink.cpp"
+				RelativePath="lookfs.cpp"
 				>
 			</File>
 		</Filter>

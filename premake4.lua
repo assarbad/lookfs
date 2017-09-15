@@ -7,7 +7,7 @@
   ]]
 local action = _ACTION or ""
 local release = false
-local tgtname = "looklink"
+local tgtname = "lookfs"
 if _OPTIONS["release"] then
     print "INFO: Creating release build solution."
     release = true
@@ -218,7 +218,7 @@ solution (tgtname .. iif(release, "_release", ""))
 
     project (tgtname .. iif(release, "_release", ""))
         local int_dir   = iif(release, "release_", "").."intermediate/" .. action .. "_$(" .. transformMN("Platform") .. ")_$(" .. transformMN("Configuration") .. ")\\$(ProjectName)"
-        uuid            ("BB5CC837-5B2C-4511-9BEC-83FF981C9295")
+        uuid            ("659D3E1E-54E8-4B72-A40A-CD3A2C67D0B0")
         language        ("C++")
         kind            ("ConsoleApp")
         targetname      (tgtname)
@@ -237,6 +237,7 @@ solution (tgtname .. iif(release, "_release", ""))
         excludes
         {
             "hgid.h",
+            "Backup*.*",
         }
 
         files

@@ -1,9 +1,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 ///
-/// Written 2009-2013, Oliver Schneider (assarbad.net) - PUBLIC DOMAIN/CC0
+/// Written by Oliver Schneider (assarbad.net) - PUBLIC DOMAIN/CC0
 ///
 /// Original filename: ReparsePoint.h
-/// Project          : looklink
+/// Project          : lookfs
 /// Date of creation : 2009-02-03
 /// Author(s)        : Oliver Schneider
 ///
@@ -13,7 +13,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef __REPARSEPOINT_H_VER__
-#define __REPARSEPOINT_H_VER__ 2017091421
+#define __REPARSEPOINT_H_VER__ 2017091518
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
 #endif // Check for "#pragma once" support
