@@ -29,14 +29,16 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef __VERSIONINFO_H_VER__
-#define __VERSIONINFO_H_VER__ 2017091521
+#define __VERSIONINFO_H_VER__ 2017091820
 #if (defined(_MSC_VER) && (_MSC_VER >= 1020)) || defined(__MCPP)
 #pragma once
 #endif // Check for "#pragma once" support
 
 #include <Windows.h>
 #include <tchar.h>
+#pragma warning(disable:4995)
 #include <cstdio>
+#pragma warning(default:4995)
 #pragma comment(lib, "delayimp")
 
 class CVersionInfo
