@@ -4,20 +4,23 @@
 ///
 /// Original filename: AlternateDataStreams.h
 /// Project          : lookfs
-/// Date of creation : 2010-01-26
-/// Author(s)        : Oliver Schneider
 ///
 /// Purpose          : Class to list ADS on files (NTFS volumes)
 ///
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef __ALTERNATEDATASTREAMS_H_VER__
-#define __ALTERNATEDATASTREAMS_H_VER__ 2017091520
+#define __ALTERNATEDATASTREAMS_H_VER__ 2017091820
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
 #endif // Check for "#pragma once" support
 
 #include <tchar.h>
 #include <Windows.h>
+#ifndef __NTNATIVE_H_VER__
+#pragma warning(disable:4005)
+#include <ntstatus.h>
+#pragma warning(default:4005)
+#endif // __NTNATIVE_H_VER__
 
 #define WIN32_UNICODE_PREFIX L"\\\\?\\"
 #define DATA_TAG_NAME        L":$DATA"
@@ -40,6 +43,7 @@ public:
     typedef CVerySimpleBuf<TCHAR> CTString, *PTString;
     typedef CVerySimpleBuf<BYTE>  ByteBuf;
 private:
+#ifndef __NTNATIVE_H_VER__
     // Stuff we need to talk to NTDLL
     typedef LONG NTSTATUS;
 
@@ -53,58 +57,64 @@ private:
         ULONG_PTR Information;
     } IO_STATUS_BLOCK, *PIO_STATUS_BLOCK;
 
-    typedef enum _FILE_INFORMATION_CLASS
+    typedef enum _NT_FILE_INFORMATION_CLASS
     {
-        FileDirectoryInformation       = 1,
-        FileFullDirectoryInformation, // 2
-        FileBothDirectoryInformation, // 3
-        FileBasicInformation,         // 4
-        FileStandardInformation,      // 5
-        FileInternalInformation,      // 6
-        FileEaInformation,            // 7
-        FileAccessInformation,        // 8
-        FileNameInformation,          // 9
-        FileRenameInformation,        // 10
-        FileLinkInformation,          // 11
-        FileNamesInformation,         // 12
-        FileDispositionInformation,   // 13
-        FilePositionInformation,      // 14
-        FileFullEaInformation,        // 15
-        FileModeInformation,          // 16
-        FileAlignmentInformation,     // 17
-        FileAllInformation,           // 18
-        FileAllocationInformation,    // 19
-        FileEndOfFileInformation,     // 20
-        FileAlternateNameInformation, // 21
-        FileStreamInformation,        // 22
-        FilePipeInformation,          // 23
-        FilePipeLocalInformation,     // 24
-        FilePipeRemoteInformation,    // 25
-        FileMailslotQueryInformation, // 26
-        FileMailslotSetInformation,   // 27
-        FileCompressionInformation,   // 28
-        FileObjectIdInformation,      // 29
-        FileCompletionInformation,    // 30
-        FileMoveClusterInformation,   // 31
-        FileQuotaInformation,         // 32
-        FileAlternateDataStreamsInformation,  // 33
-        FileNetworkOpenInformation,   // 34
-        FileAttributeTagInformation,  // 35
-        FileTrackingInformation,      // 36
-        FileMaximumInformation
-        // begin_wdm
-    } FILE_INFORMATION_CLASS, *PFILE_INFORMATION_CLASS;
+        FileInformationDirectory = 1,
+        FileInformationFullDirectory, //  2
+        FileInformationBothDirectory, //  3
+        FileInformationBasic, //  4
+        FileInformationStandard, //  5
+        FileInformationInternal, //  6
+        FileInformationEa, //  7
+        FileInformationAccess, //  8
+        FileInformationName, //  9
+        FileInformationRename, //  10
+        FileInformationLink, //  11
+        FileInformationNames, //  12
+        FileInformationDisposition, //  13
+        FileInformationPosition, //  14
+        FileInformationFullEa, //  15
+        FileInformationMode, //  16
+        FileInformationAlignment, //  17
+        FileInformationAll, //  18
+        FileInformationAllocation, //  19
+        FileInformationEndOfFile, //  20
+        FileInformationAlternateName, //  21
+        FileInformationStream, //  22
+        FileInformationPipe, //  23
+        FileInformationPipeLocal, //  24
+        FileInformationPipeRemote, //  25
+        FileInformationMailslotQuery, //  26
+        FileInformationMailslotSet, //  27
+        FileInformationCompression, //  28
+        FileInformationObjectId, //  29
+        FileInformationCompletion, //  30
+        FileInformationMoveCluster, //  31
+        FileInformationQuota, //  32
+        FileInformationReparsePoint, //  33
+        FileInformationNetworkOpen, //  34
+        FileInformationAttributeTag, //  35
+        FileInformationTracking, //  36
+        FileInformationIdBothDirectory, //  37
+        FileInformationIdFullDirectory, //  38
+        FileInformationValidDataLength, //  39
+        FileInformationShortName, //  40
+        FileInformationIoCompletionNotification, //  41
+        FileInformationIoStatusBlockRange, //  42
+        FileInformationIoPriorityHint, //  43
+        FileInformationSfioReserve, //  44
+        FileInformationSfioVolume, //  45
+        FileInformationHardLink, //  46
+        FileInformationProcessIdsUsingFile, //  47
+        FileInformationNormalizedName, //  48
+        FileInformationNetworkPhysicalName, //  49
+        FileInformationIdGlobalTxDirectory, //  50
+        FileInformationIsRemoteDevice, //  51
+        FileInformationAttributeCache, //  52
+        FileInformationMaximum,
+    } NT_FILE_INFORMATION_CLASS, *PNT_FILE_INFORMATION_CLASS;
 
 #pragma pack(push, 4)
-    typedef struct _FILE_FULL_EA_INFORMATION
-    {
-        ULONG NextEntryOffset;
-        UCHAR Flags;
-        UCHAR EaNameLength;
-        USHORT EaValueLength;
-        CHAR EaName[1];
-    } FILE_FULL_EA_INFORMATION, *PFILE_FULL_EA_INFORMATION;
-
     typedef struct _FILE_STREAM_INFORMATION // Information Class 22
     {
         ULONG NextEntryOffset;
@@ -115,16 +125,18 @@ private:
     } FILE_STREAM_INFORMATION, *PFILE_STREAM_INFORMATION;
 #pragma pack(pop)
 
-    typedef NTSTATUS (WINAPI *TFNZwQueryInformationFile)
+    typedef NTSTATUS (WINAPI *NtQueryInformationFile_t)
         (
         HANDLE hFile,
         PIO_STATUS_BLOCK IoStatusBlock,
         PVOID FileInformation,
         ULONG Length,
-        FILE_INFORMATION_CLASS FileInformationClass
+        NT_FILE_INFORMATION_CLASS FileInformationClass
         );
 
     static const NTSTATUS STATUS_BUFFER_OVERFLOW = 0x80000005;
+#endif // __NTNATIVE_H_VER__
+
     static const DWORD dwAllocIncrement = 0x400;
 
 public:
@@ -132,7 +144,7 @@ public:
         : m_Path(normalizePath_(Path))
         , m_Attr(::GetFileAttributesW(m_Path.getBuf()))
         , m_OpenFlags(((m_Attr & FILE_ATTRIBUTE_DIRECTORY) ? FILE_FLAG_BACKUP_SEMANTICS : 0))
-        , m_ZwQueryInformationFile(reinterpret_cast<TFNZwQueryInformationFile>(::GetProcAddress(::GetModuleHandle(_T("ntdll.dll")), "ZwQueryInformationFile")))
+        , m_NtQueryInformationFile(reinterpret_cast<NtQueryInformationFile_t>(::GetProcAddress(::GetModuleHandle(_T("ntdll.dll")), "NtQueryInformationFile")))
         , m_StreamCount(0)
         , m_BufSize(dwAllocIncrement)
         , m_StreamNames(0)
@@ -216,7 +228,7 @@ private:
     DWORD cacheStreams_()
     {
         DWORD dwReturn = 0;
-        if(m_ZwQueryInformationFile)
+        if(m_NtQueryInformationFile)
         {
             // We only cache stream names for files
             HANDLE hFile = ::CreateFile(m_Path.getBuf(), 0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, m_Attr | m_OpenFlags, NULL);
@@ -232,12 +244,12 @@ private:
                         break;
                     }
                     reinterpret_cast<PFILE_STREAM_INFORMATION>(m_Buffer.getBuf())->StreamNameLength = 0;
-                    status = m_ZwQueryInformationFile(
+                    status = m_NtQueryInformationFile(
                         hFile
                         , &iostat
                         , reinterpret_cast<PVOID>(m_Buffer.getBuf())
                         , static_cast<ULONG>(m_Buffer.getByteCount())
-                        , FileStreamInformation
+                        , FileInformationStream
                         );
                 } while(STATUS_BUFFER_OVERFLOW == status);
                 // No errors? Well, then count the elements
@@ -332,7 +344,7 @@ private:
     CWideString                     m_Path;
     DWORD const                     m_Attr;
     DWORD const                     m_OpenFlags;
-    TFNZwQueryInformationFile       m_ZwQueryInformationFile;
+    NtQueryInformationFile_t        m_NtQueryInformationFile;
     DWORD mutable                   m_StreamCount;
     CVerySimpleBuf<BYTE> mutable    m_Buffer;
     DWORD mutable                   m_BufSize;

@@ -4,8 +4,6 @@
 ///
 /// Original filename: ReparsePoint.h
 /// Project          : lookfs
-/// Date of creation : 2009-02-03
-/// Author(s)        : Oliver Schneider
 ///
 /// Purpose          : Class to investigate reparse points on Windows 2000 and
 ///                    later.
@@ -13,7 +11,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef __REPARSEPOINT_H_VER__
-#define __REPARSEPOINT_H_VER__ 2017091522
+#define __REPARSEPOINT_H_VER__ 2017091820
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
 #endif // Check for "#pragma once" support
