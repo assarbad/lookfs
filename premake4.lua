@@ -223,13 +223,13 @@ solution (tgtname .. iif(release, "_release", ""))
         kind            ("ConsoleApp")
         targetname      (tgtname)
         flags           {"Unicode", "NativeWChar", "ExtraWarnings", "WinMain", "NoRTTI",}
-        defines         {"RP_QUERY_FILE_ID", "_CONSOLE", "WIN32", "_WINDOWS", "STRICT"}
         targetdir       (iif(release, tgtname .. "_release", "bin"))
         objdir          (int_dir)
         libdirs         {"$(IntDir)"}
-        links           {"version"}
-        linkoptions     {"/delay:nobind","/delayload:version.dll"}
+        links           {"ntdll-delayed", "version"}
         resoptions      {"/nologo", "/l409"}
+        linkoptions     {"/delay:nobind","/delayload:ntdll-delayed.dll","/delayload:version.dll"}
+        defines         {"RP_QUERY_FILE_ID", "_CONSOLE", "WIN32", "_WINDOWS", "STRICT"}
         if not _OPTIONS["msvcrt"] then
             flags       {"StaticRuntime"}
         end
@@ -242,6 +242,7 @@ solution (tgtname .. iif(release, "_release", ""))
 
         files
         {
+            "ntdll-stubs/*.txt",
             "thirdparty/simpleopt/*.h",
             "*.rc",
             "*.cpp",
@@ -250,18 +251,25 @@ solution (tgtname .. iif(release, "_release", ""))
             "*.manifest",
             "*.cmd", "*.txt", "*.md", "*.rst", "premake4.lua",
         }
-        
+
         vpaths
         {
             ["Header Files/*"] = { "*.h", "*.hpp" },
             ["Header Files/simpleopt/*"] = { "thirdparty/simpleopt/*.h" },
+            ["Resource Files/*"] = { "**.rc" },
             ["Source Files/*"] = { "*.cpp" },
-            ["Resource Files/*"] = { "*.rc" },
             ["Special Files/*"] = { "**.cmd", "premake4.lua", "*.rst", "*.txt", },
+            ["Special Files/Module Definition Files/*"] = { "ntdll-stubs/*.txt", },
         }
 
         configuration {"*"}
             prebuildcommands{"call \"$(ProjectDir)\\hgid.cmd\"",}
+
+        configuration {"x64"}
+            prebuildcommands{"lib.exe /nologo /nodefaultlib \"/def:ntdll-stubs\\ntdll-delayed.txt\" \"/out:$(IntDir)\\ntdll-delayed.lib\" /machine:x64",}
+
+        configuration {"x32"}
+            prebuildcommands{"cl.exe /nologo /c /TC /Ob0 /Gz ntdll-stubs\\ntdll-delayed-stubs.c \"/Fo$(IntDir)\\ntdll-delayed-stubs.obj\"", "lib.exe /nologo \"/def:ntdll-stubs\\ntdll-delayed.txt\" \"/out:$(IntDir)\\ntdll-delayed.lib\" /machine:x86 \"$(IntDir)\\ntdll-delayed-stubs.obj\"",}
 
         configuration {"Debug", "x32"}
             targetsuffix    ("32D")
