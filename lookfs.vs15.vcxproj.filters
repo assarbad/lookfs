@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Special Files">
+      <UniqueIdentifier>{7812CC91-FED5-D316-0ADC-03BD6E1D8419}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Special Files\Module Definition Files">
+      <UniqueIdentifier>{A6653692-A4ED-2418-6417-B4AFFE3C75EC}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Header Files">
       <UniqueIdentifier>{18E1CFE4-D565-CA4F-51E2-3C21A7E6A4DE}</UniqueIdentifier>
     </Filter>
@@ -13,11 +19,11 @@
     <Filter Include="Source Files">
       <UniqueIdentifier>{A2221E43-DA1C-30E4-D176-8A03371182C9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Special Files">
-      <UniqueIdentifier>{7812CC91-FED5-D316-0ADC-03BD6E1D8419}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <None Include="ntdll-stubs\ntdll-delayed.txt">
+      <Filter>Special Files\Module Definition Files</Filter>
+    </None>
     <None Include="hgid.cmd">
       <Filter>Special Files</Filter>
     </None>
@@ -47,6 +53,12 @@
     <ClInclude Include="FileAttributes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ntfindfile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ntnative.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="ReparseTags.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -67,7 +79,13 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="delayimp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="lookfs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ntfindfile.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

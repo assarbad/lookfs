@@ -2,14 +2,11 @@
 ///
 /// Written by Oliver Schneider (assarbad.net) - PUBLIC DOMAIN/CC0
 ///
-/// Original filename: AlternateDataStreams.h
-/// Project          : lookfs
-///
 /// Purpose          : Class to list ADS on files (NTFS volumes)
 ///
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef __ALTERNATEDATASTREAMS_H_VER__
-#define __ALTERNATEDATASTREAMS_H_VER__ 2017091820
+#define __ALTERNATEDATASTREAMS_H_VER__ 2017100317
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
 #endif // Check for "#pragma once" support
@@ -139,12 +136,21 @@ private:
 
     static const DWORD dwAllocIncrement = 0x400;
 
+    static NtQueryInformationFile_t getNtQueryInformationFileAddress()
+    {
+        HMODULE hNtdll = ::GetModuleHandle(_T("ntdll.dll"));
+        if(hNtdll)
+            return reinterpret_cast<NtQueryInformationFile_t>(::GetProcAddress(hNtdll, "NtQueryInformationFile"));
+        else
+            return reinterpret_cast<NtQueryInformationFile_t>(0);
+    }
+
 public:
     CAlternateDataStreams(WCHAR const* Path)
         : m_Path(normalizePath_(Path))
         , m_Attr(::GetFileAttributesW(m_Path.getBuf()))
         , m_OpenFlags(((m_Attr & FILE_ATTRIBUTE_DIRECTORY) ? FILE_FLAG_BACKUP_SEMANTICS : 0))
-        , m_NtQueryInformationFile(reinterpret_cast<NtQueryInformationFile_t>(::GetProcAddress(::GetModuleHandle(_T("ntdll.dll")), "NtQueryInformationFile")))
+        , m_NtQueryInformationFile(getNtQueryInformationFileAddress())
         , m_StreamCount(0)
         , m_BufSize(dwAllocIncrement)
         , m_StreamNames(0)
@@ -317,9 +323,6 @@ private:
                     psi = reinterpret_cast<PFILE_STREAM_INFORMATION>((psi->NextEntryOffset) ? curr : 0);
                 }
             }
-            // Count the valid elements
-            m_StreamCount = 0;
-            for(DWORD i = 0; m_StreamNames[i]; i++, m_StreamCount++);
         }
         catch(...)
         {

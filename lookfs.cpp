@@ -4,24 +4,37 @@
 ///
 /// Original filename: lookfs.cpp
 /// Project          : lookfs
-/// Date of creation : 2009-02-03
-/// Author(s)        : Oliver Schneider
 ///
 /// Purpose          : Program to investigate all kinds of file system artifacts
 ///                    on Windows 2000 and later.
 ///
 ///////////////////////////////////////////////////////////////////////////////
+#ifndef WINVER
+#   define WINVER           0x0500
+#endif
+#ifndef _WIN32_WINNT
+#   define _WIN32_WINNT     0x0501
+#endif
+
 #ifdef _DEBUG
 #include <cstdlib>
 #include <crtdbg.h>
 #endif // _DEBUG
 #include <cstdio>
 #include <tchar.h>
-#include "lookfs.hpp"
-#include "VersionInfo.hpp"
+#define _ATL_USE_CSTRING
+#define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS
+#include <atlbase.h>
+#include <atlstr.h>
 #include "thirdparty/simpleopt/SimpleOpt.h"
+#include "ntnative.h"
+#include "ntfindfile.h"
+#include "AlternateDataStreams.hpp"
+#include "ReparsePoint.hpp"
+#include "VersionInfo.hpp"
 
-namespace {
+namespace
+{
     static const TCHAR *
         getLastErrorText(
         int a_nError
@@ -151,6 +164,7 @@ namespace {
         OPT_NOLOGO,
         OPT_NOERR,
         OPT_VERBOSE,
+        OPT_NOCASE,
         OPT_STOP,
     };
 
@@ -167,6 +181,8 @@ namespace {
         { OPT_VERBOSE,  _T("--verbose"),    SO_NONE },
         { OPT_VERBOSE,  _T("-V"),           SO_NONE },
         { OPT_VERBOSE,  _T("--version"),    SO_NONE },
+        { OPT_NOCASE,   _T("-i"),           SO_NONE },
+        { OPT_NOCASE,   _T("--case-insensitive"), SO_NONE },
         { OPT_STOP,     _T("--"),           SO_NONE },
         SO_END_OF_OPTIONS,
     };
@@ -242,6 +258,49 @@ namespace {
         }
         return 0;
     }
+
+    BOOL isDotDir(LPCTSTR path)
+    {
+        if(!path)
+            return FALSE;
+        if(path[0] == _T('.'))
+        {
+            if(!path[1])
+                return TRUE;
+            if(path[1] == _T('.') && !path[2])
+                return TRUE;
+        }
+        return FALSE;
+    }
+
+    int traverseDir(WCHAR const* path, bool be_verbose, bool noerror, bool casesensitive)
+    {
+        NT_FIND_DATA fd;
+        HANDLE hFind = NativeFindFirstFile(path, &fd, casesensitive);
+        if(hFind && hFind != INVALID_HANDLE_VALUE)
+        {
+            do
+            {
+                _tprintf(_T("%08X | %s\n"), fd.dwFileAttributes, fd.cFileName);
+                if(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY && !isDotDir(fd.cFileName))
+                {
+                    CString subfolder(path);
+                    subfolder.Append(_T("\\"));
+                    subfolder.Append(fd.cFileName);
+                    subfolder.Append(_T("\\*.*"));
+                    traverseDir(subfolder, be_verbose, noerror, casesensitive);
+                }
+            } while(NativeFindNextFile(hFind, &fd));
+            NativeFindClose(hFind);
+        }
+        else
+        {
+            _ftprintf(stderr, _T("NativeFindFirstFile() on %s failed with %d\n"), path, GetLastError());
+            return 1;
+        }
+        return 0;
+    }
+
 }
 
 int __cdecl _tmain(int argc, _TCHAR *argv[])
@@ -252,7 +311,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
     CVersionInfo verinfo(getInstanceHandle());
     CSimpleOpt args(argc, argv, g_Options, SO_O_NOERR | SO_O_EXACT);
 
-    bool show_logo = true, be_verbose = false, noerror = false;
+    bool show_logo = true, be_verbose = false, noerror = false, casesensitive = true;
 
     while(args.Next())
     {
@@ -282,6 +341,9 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
         case OPT_VERBOSE:
             be_verbose = true;
             break;
+        case OPT_NOCASE:
+            casesensitive = false;
+            break;
         case OPT_STOP:
             args.Stop();
             break;
@@ -300,7 +362,8 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
 #ifdef _DEBUG
         _CrtCheckMemory();
 #endif // _DEBUG
-        int err = showReparsePoint(args.File(n), be_verbose, noerror);
+        
+        int err = traverseDir(args.File(n), be_verbose, noerror, casesensitive);
         if(err > retval)
         {
             retval = err;

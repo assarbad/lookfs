@@ -246,6 +246,7 @@ solution (tgtname .. iif(release, "_release", ""))
             "thirdparty/simpleopt/*.h",
             "*.rc",
             "*.cpp",
+            "*.c",
             "*.h",
             "*.hpp",
             "*.manifest",
@@ -257,7 +258,7 @@ solution (tgtname .. iif(release, "_release", ""))
             ["Header Files/*"] = { "*.h", "*.hpp" },
             ["Header Files/simpleopt/*"] = { "thirdparty/simpleopt/*.h" },
             ["Resource Files/*"] = { "**.rc" },
-            ["Source Files/*"] = { "*.cpp" },
+            ["Source Files/*"] = { "*.cpp", "*.c" },
             ["Special Files/*"] = { "**.cmd", "premake4.lua", "*.rst", "*.txt", },
             ["Special Files/Module Definition Files/*"] = { "ntdll-stubs/*.txt", },
         }
