@@ -29,7 +29,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef __NTNATIVE_H_VER__
-#define __NTNATIVE_H_VER__ 2017100300
+#define __NTNATIVE_H_VER__ 2017100420
 #if (defined(_MSC_VER) && (_MSC_VER >= 1020)) || defined(__MCPP)
 #pragma once
 #endif // Check for "#pragma once" support
@@ -38,6 +38,7 @@
 #if !defined(__in_bcount) && !defined(_In_reads_bytes_)
 #   define __success(x)
 #   define __field_range(x, y)
+#   define __field_nullterminated
 #   define __in
 #   define __in_z
 #   define __in_bcount(x)
@@ -55,6 +56,7 @@
 #if defined(__in_bcount) && !defined(_In_reads_bytes_)
 #   define _Success_(x) __success(x)
 #   define _Field_range_(x, y) __field_range(x, y)
+#   define _Field_z_ __field_nullterminated
 #   define _In_ __in
 #   define _In_z_ __in_z
 #   define _In_reads_bytes_(x) __in_bcount(x)
@@ -70,6 +72,10 @@
 
 #ifndef _Ret_maybenull_
 #   define _Ret_maybenull_
+#endif
+
+#ifndef _Ret_writes_bytes_maybenull_
+#   define _Ret_writes_bytes_maybenull_(Size)
 #endif
 
 #ifndef _Post_writable_byte_size_

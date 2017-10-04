@@ -19,17 +19,19 @@ typedef FILE_DIRECTORY_INFORMATION OUR_NATIVE_INFO;
 #define OurNativeInfoClass FileInformationDirectory
 
 /* adjust this to use larger buffers for querying the entries from a directory */
-#ifdef _DEBUG /* for debug we want to see the STATUS_BUFFER_OVERFLOW logic */
-#   define LARGE_FIND_BUFFER_SIZE (sizeof(OUR_NATIVE_INFO))
-#else
-#   define LARGE_FIND_BUFFER_SIZE (1<<24)
-#endif // _DEBUG
+#ifndef LARGE_FIND_BUFFER_SIZE
+#   ifdef _DEBUG /* for debug we want to see the STATUS_BUFFER_OVERFLOW logic */
+#       define LARGE_FIND_BUFFER_SIZE (sizeof(OUR_NATIVE_INFO))
+#   else
+#       define LARGE_FIND_BUFFER_SIZE (1<<24)
+#   endif // _DEBUG
+#endif // LARGE_FIND_BUFFER_SIZE
 
 typedef struct _FINDFILE_HANDLE
 {
     HANDLE hDirectory;
     PVOID pBuffer;
-    SIZE_T cbBuffer;
+    ULONG cbBuffer;
     PUCHAR pNextEntry;
     NTSTATUS ntStatus;
     CRITICAL_SECTION csFindHandle;
@@ -90,7 +92,7 @@ static BOOLEAN freeFindHandle_(_In_reads_bytes_(sizeof(FINDFILE_HANDLE)) FINDFIL
             (void)NtClose(pFindHandle->hDirectory);
             pFindHandle->hDirectory = NULL;
             DeleteCriticalSection(&pFindHandle->csFindHandle);
-            return FALSE != HeapFree(GetProcessHeap(), 0, pFindHandle);
+            return (HeapFree(GetProcessHeap(), 0, pFindHandle)) ? TRUE : FALSE;
         }
     }
     return FALSE;
@@ -137,14 +139,14 @@ static BOOLEAN doubleFindHandleBufferSize_(_In_reads_bytes_(sizeof(FINDFILE_HAND
 }
 
 /* returns offset to next entry (or 0) */
-inline void populateFindFileData_(NT_FIND_DATA* lpFindFileData, OUR_NATIVE_INFO* dirinfo, FINDFILE_HANDLE* pFindHandle)
+__inline void populateFindFileData_(NT_FIND_DATA* lpFindFileData, OUR_NATIVE_INFO* dirinfo, FINDFILE_HANDLE* pFindHandle)
 {
     /* populate the find data */
     lpFindFileData->dwFileAttributes = dirinfo->FileAttributes;
     lpFindFileData->ftCreationTime = *(FILETIME*)&dirinfo->CreationTime;
     lpFindFileData->ftLastAccessTime = *(FILETIME*)&dirinfo->LastAccessTime;
     lpFindFileData->ftLastWriteTime = *(FILETIME*)&dirinfo->LastWriteTime;
-    lpFindFileData->nFileSize = dirinfo->AllocationSize;
+    lpFindFileData->nFileSize = dirinfo->AllocationSize.QuadPart;
 
     (void)memmove(&lpFindFileData->cFileName, &dirinfo->FileName, dirinfo->FileNameLength);
     lpFindFileData->cFileName[dirinfo->FileNameLength / sizeof(WCHAR)] = 0;
@@ -160,7 +162,7 @@ inline void populateFindFileData_(NT_FIND_DATA* lpFindFileData, OUR_NATIVE_INFO*
 }
 
 /* wraps NtQueryDirectoryFile and handles resizing the buffer inside the find handle */
-inline NTSTATUS WrapNtQueryDirectoryFile_(FINDFILE_HANDLE* pFindHandle, PUNICODE_STRING FileName)
+__inline NTSTATUS WrapNtQueryDirectoryFile_(FINDFILE_HANDLE* pFindHandle, PUNICODE_STRING FileName)
 {
     IO_STATUS_BLOCK iostat;
     NTSTATUS ntStatus = NtQueryDirectoryFile(

@@ -17,11 +17,15 @@
 #endif
 
 #ifdef _DEBUG
-#include <cstdlib>
-#include <crtdbg.h>
+#   include <cstdlib>
+#   include <crtdbg.h>
+#   define _TRACE(fmt, ...) do { _ftprintf(stderr, _T("TRACE: ")); _ftprintf(stderr, fmt, __VA_ARGS__); _ftprintf(stderr, _T("\n")); } while (0)
+#else
+#   define _TRACE(fmt, ...) do {} while (0)
 #endif // _DEBUG
 #include <cstdio>
 #include <tchar.h>
+#include <cstring>
 #define _ATL_USE_CSTRING
 #define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS
 #include <atlbase.h>
@@ -68,7 +72,7 @@ namespace
         switch(rp.ReparseTag())
         {
         case IO_REPARSE_TAG_MOUNT_POINT:
-            return _T("volume mount point");
+            return _T("mount point");
         case IO_REPARSE_TAG_HSM:
             return _T("HSM reparse point");
         case IO_REPARSE_TAG_HSM2:
@@ -152,7 +156,7 @@ namespace
         showVersion(verinfo);
         _tprintf(
             _T("Syntax:\n")
-            _T("  %s [-?|-h|--help][-L|--nologo] [-v|--verbose] [-V|--version] [-E|--noerror] <path ...>\n")
+            _T("  %s [-?|-h|--help][-L|--nologo] [-v|--verbose] [-V|--version] [-E|--noerror] [-i|--case-insensitive] <path ...>\n")
             , verinfo[_T("OriginalFilename")]
         );
     }
@@ -215,8 +219,11 @@ namespace
             if(rp.isNameSurrogate())
             {
                 _tprintf(_T("\tPrint name: %ws\n"), rp.PrintName());
-                _tprintf(_T("\tSubst name: %ws\n"), rp.SubstName());
-                _tprintf(_T("\tSubst name: %ws (w32)\n"), rp.CanonicalSubstName());
+                if(be_verbose)
+                {
+                    _tprintf(_T("\tSubst name: %ws\n"), rp.SubstName());
+                    _tprintf(_T("\tSubst name: %ws (w32)\n"), rp.CanonicalSubstName());
+                }
             }
             if(!rp.isMicrosoftTag() || be_verbose)
             {
@@ -259,48 +266,214 @@ namespace
         return 0;
     }
 
-    BOOL isDotDir(LPCTSTR path)
+    class CPathFinder
     {
-        if(!path)
-            return FALSE;
-        if(path[0] == _T('.'))
+        BOOL m_bValid;
+        HANDLE m_hFind;
+        const CString m_sOriginalPath;
+        CString m_sNormalizedPath;
+        CString m_sDirectory; // always has a trailing backslash
+        CString m_sSearchMask;
+        NT_FIND_DATA m_fd;
+        LONG m_lError;
+        // hide these
+        CPathFinder(CPathFinder&);
+        CPathFinder& operator=(CPathFinder&);
+    public:
+        CPathFinder(TCHAR const* szPath, BOOLEAN bCaseSensitive = FALSE)
+            : m_bValid(FALSE)
+            , m_hFind(INVALID_HANDLE_VALUE)
+            , m_sOriginalPath(szPath)
+            , m_sNormalizedPath(szPath)
+            , m_sSearchMask(_T("*"))
+            , m_lError(ERROR_SUCCESS)
         {
-            if(!path[1])
-                return TRUE;
-            if(path[1] == _T('.') && !path[2])
-                return TRUE;
-        }
-        return FALSE;
-    }
-
-    int traverseDir(WCHAR const* path, bool be_verbose, bool noerror, bool casesensitive)
-    {
-        NT_FIND_DATA fd;
-        HANDLE hFind = NativeFindFirstFile(path, &fd, casesensitive);
-        if(hFind && hFind != INVALID_HANDLE_VALUE)
-        {
-            do
+            if(!szPath || m_sOriginalPath.IsEmpty())
             {
-                _tprintf(_T("%08X | %s\n"), fd.dwFileAttributes, fd.cFileName);
-                if(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY && !isDotDir(fd.cFileName))
+                _TRACE(_T("Invalid szPath == %s"), szPath);
+                return;
+            }
+            if(adjustPaths_())
+            {
+                CString sSearchPath(m_sDirectory.GetString());
+                sSearchPath += m_sSearchMask;
+                memset(&m_fd, 0, sizeof(m_fd));
+                m_hFind = NativeFindFirstFile(sSearchPath, &m_fd, bCaseSensitive);
+                if(INVALID_HANDLE_VALUE != m_hFind)
                 {
-                    CString subfolder(path);
-                    subfolder.Append(_T("\\"));
-                    subfolder.Append(fd.cFileName);
-                    subfolder.Append(_T("\\*.*"));
-                    traverseDir(subfolder, be_verbose, noerror, casesensitive);
+                    //_TRACE(_T("NativeFindFirstFile(\"%s\", %p, %s) -> %p"), sSearchPath.GetString(), &m_fd, bCaseSensitive ? _T("TRUE") : _T("FALSE"), m_hFind);
+                    // Keep looking for the next item until we have skipped the . and .. entries
+                    while(isDotDir_(m_fd.cFileName))
+                    {
+                        if(!next())
+                        {
+                            break;
+                        }
+                    }
                 }
-            } while(NativeFindNextFile(hFind, &fd));
-            NativeFindClose(hFind);
+                else
+                {
+                    m_bValid = FALSE;
+                    m_lError = GetLastError();
+                    //_TRACE(_T("NativeFindFirstFile(\"%s\", %p, %s) -> INVALID_HANDLE_VALUE (error: %d)"), sSearchPath.GetString(), &m_fd, bCaseSensitive ? _T("TRUE") : _T("FALSE"), m_lError);
+                }
+            }
         }
-        else
+
+        ~CPathFinder()
         {
-            _ftprintf(stderr, _T("NativeFindFirstFile() on %s failed with %d\n"), path, GetLastError());
-            return 1;
+            if(m_hFind != NULL && m_hFind != INVALID_HANDLE_VALUE)
+            {
+                //_TRACE(_T("NativeFindClose(%p)"), m_hFind);
+                NativeFindClose(m_hFind);
+            }
         }
+
+        inline bool next()
+        {
+            if(!m_bValid)
+            {
+                m_lError = ERROR_INVALID_PARAMETER;
+                return false;
+            }
+            BOOL bRetVal = NativeFindNextFile(m_hFind, &m_fd);
+            if(bRetVal)
+            {
+                // Keep looking for the next item until we have skipped the . and .. entries
+                while(isDotDir_(m_fd.cFileName))
+                {
+                    bRetVal = NativeFindNextFile(m_hFind, &m_fd);
+                    if(!bRetVal)
+                    {
+                        break;
+                    }
+                }
+            }
+            if(!bRetVal)
+            {
+                memset(&m_fd, 0, sizeof(m_fd));
+                m_lError = GetLastError();
+            }
+            return FALSE != bRetVal;
+        }
+
+        inline NT_FIND_DATA const& getFindData() const
+        {
+            return m_fd;
+        }
+
+        inline CString getFullPathName() const
+        {
+            CString p(m_sDirectory);
+            p += m_fd.cFileName;
+            return p;
+        }
+
+        inline LPCTSTR getSearchMask() const
+        {
+            return m_sSearchMask.GetString();
+        }
+
+        inline operator bool() const
+        {
+            return m_bValid != FALSE;
+        }
+
+        inline bool operator!() const
+        {
+            return !this->operator bool();
+        }
+
+        inline LONG LastError() const
+        {
+            return m_lError;
+        }
+    private:
+        static BOOL isDotDir_(LPCTSTR path)
+        {
+            if(!path)
+                return FALSE;
+            if(path[0] == _T('.'))
+            {
+                if(!path[1]) // directory entry '.'
+                    return TRUE;
+                if(path[1] == _T('.') && !path[2]) // directory entry '..'
+                    return TRUE;
+            }
+            return FALSE;
+        }
+
+        BOOL adjustPaths_()
+        {
+            // Replace forward slashes by backward slashes
+            for(int i = 0; i < m_sNormalizedPath.GetLength(); i++)
+            {
+                if(m_sNormalizedPath.GetAt(i) == _T('/'))
+                {
+                    m_sNormalizedPath.SetAt(i, _T('\\'));
+                }
+            }
+            DWORD dwAttr = ::GetFileAttributes(m_sNormalizedPath);
+            if((INVALID_FILE_ATTRIBUTES == dwAttr) || !(dwAttr & FILE_ATTRIBUTE_DIRECTORY))
+            {
+                // For all we know it's a file or a path with wildcard characters at this point
+                int iLastSlash = m_sNormalizedPath.ReverseFind(_T('\\'));
+                // If there was no slash before the wildcard/filename, something else is fishy ... bail out
+                if(-1 == iLastSlash)
+                {
+                    _TRACE(_T("[ERROR] Could not find last slash in %s"), m_sNormalizedPath.GetString());
+                    m_bValid = FALSE;
+                    return m_bValid;
+                }
+                TCHAR* lpszString = m_sNormalizedPath.GetBuffer();
+                m_sSearchMask = &lpszString[iLastSlash + 1];
+                lpszString[iLastSlash + 1] = 0; // zero-terminate
+                m_sDirectory = lpszString;
+            }
+            if((INVALID_FILE_ATTRIBUTES != dwAttr) && (FILE_ATTRIBUTE_DIRECTORY & dwAttr))
+            {
+                m_sDirectory = m_sNormalizedPath;
+                if(m_sDirectory.GetAt(m_sDirectory.GetLength() - 1) != _T('\\'))
+                {
+                    m_sDirectory.AppendChar(_T('\\'));
+                }
+            }
+            m_bValid = TRUE;
+            return m_bValid;
+        }
+    };
+
+    int traversePath(WCHAR const* szPath, bool be_verbose, bool noerror, bool casesensitive)
+    {
+        if(!szPath)
+            return 1; // error
+        CPathFinder pathFinder(szPath, casesensitive);
+        do
+        {
+            if(!pathFinder)
+            {
+                _ftprintf(stderr, _T("[ERROR:%d] Failed to read contents of %s\n"), pathFinder.LastError(), pathFinder.getFullPathName().GetString());
+                return 0;
+            }
+            NT_FIND_DATA const& fd = pathFinder.getFindData();
+            CString path(pathFinder.getFullPathName());
+            if(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+            {
+                if(!(fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT))
+                {
+                    path.AppendFormat(_T("\\%s"), pathFinder.getSearchMask());
+                    // Recurse into subdirectory
+                    (void)traversePath(path, be_verbose, noerror, casesensitive);
+                }
+                else
+                {
+                    // Don't follow reparse points in any case
+                    (void)showReparsePoint(path, be_verbose, noerror);
+                }
+            }
+        } while (pathFinder.next());
         return 0;
     }
-
 }
 
 int __cdecl _tmain(int argc, _TCHAR *argv[])
@@ -363,7 +536,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
         _CrtCheckMemory();
 #endif // _DEBUG
         
-        int err = traverseDir(args.File(n), be_verbose, noerror, casesensitive);
+        int err = traversePath(args.File(n), be_verbose, noerror, casesensitive);
         if(err > retval)
         {
             retval = err;
