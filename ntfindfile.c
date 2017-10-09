@@ -9,10 +9,32 @@
 #include <tchar.h>
 #include <stdio.h>
 #include <Windows.h>
+#ifdef NTFINDFILE_DYNAMIC
+#   ifdef DYNAMIC_NTNATIVE
+#       error DYNAMIC_NTNATIVE should _NOT_ be defined if NTFINDFILE_DYNAMIC is defined
+#   endif // DYNAMIC_NTNATIVE
+#   define DYNAMIC_NTNATIVE NTFINDFILE_DYNAMIC
+#endif // NTFINDFILE_DYNAMIC
 #include "ntfindfile.h"
 #include "ntnative.h"
 
-#define SetLastErrorFromNtError(x) SetLastError((LONG)RtlNtStatusToDosError(x))
+#if defined(NTFINDFILE_DYNAMIC) && (NTFINDFILE_DYNAMIC)
+static NtOpenFile_t pfnNtOpenFile = NULL;
+static NtClose_t pfnNtClose = NULL;
+static NtQueryDirectoryFile_t pfnNtQueryDirectoryFile = NULL;
+static RtlDosPathNameToNtPathName_U_t pfnRtlDosPathNameToNtPathName_U = NULL;
+static RtlInitUnicodeString_t pfnRtlInitUnicodeString = NULL;
+static RtlNtStatusToDosError_t pfnRtlNtStatusToDosError = NULL;
+#else
+#define pfnNtOpenFile NtOpenFile
+#define pfnNtClose NtClose
+#define pfnNtQueryDirectoryFile NtQueryDirectoryFile
+#define pfnRtlDosPathNameToNtPathName_U RtlDosPathNameToNtPathName_U
+#define pfnRtlInitUnicodeString RtlInitUnicodeString
+#define pfnRtlNtStatusToDosError RtlNtStatusToDosError
+#endif
+
+#define SetLastErrorFromNtError(x) SetLastError((LONG)pfnRtlNtStatusToDosError(x))
 
 /* adjust these two items if you want to query another info class */
 typedef FILE_DIRECTORY_INFORMATION OUR_NATIVE_INFO;
@@ -27,6 +49,8 @@ typedef FILE_DIRECTORY_INFORMATION OUR_NATIVE_INFO;
 #   endif // _DEBUG
 #endif // LARGE_FIND_BUFFER_SIZE
 
+static ULONG s_uInitialBufSize = LARGE_FIND_BUFFER_SIZE;
+
 typedef struct _FINDFILE_HANDLE
 {
     HANDLE hDirectory;
@@ -37,9 +61,54 @@ typedef struct _FINDFILE_HANDLE
     CRITICAL_SECTION csFindHandle;
 } FINDFILE_HANDLE;
 
+_Success_(return != 0)
+EXTERN_C BOOLEAN NativeFindInit(_In_ ULONG cbInitialBuffer)
+{
+#if defined(NTFINDFILE_DYNAMIC) && (NTFINDFILE_DYNAMIC)
+    static HMODULE hNtDll = NULL;
+#endif
+    if(!cbInitialBuffer)
+    {
+        s_uInitialBufSize = LARGE_FIND_BUFFER_SIZE;
+    }
+#if defined(NTFINDFILE_DYNAMIC) && (NTFINDFILE_DYNAMIC)
+    if(!hNtDll)
+    {
+        hNtDll = GetModuleHandle(_T("ntdll.dll"));
+        if(!hNtDll)
+        {
+            SetLastError(ERROR_MOD_NOT_FOUND);
+            return FALSE;
+        }
+#define NTFIND_DEFFUNC(x) pfn##x = (x##_t)NTNATIVE_GETPROCADDR(hNtDll, x)
+        NTFIND_DEFFUNC(NtOpenFile);
+        NTFIND_DEFFUNC(NtClose);
+        NTFIND_DEFFUNC(NtQueryDirectoryFile);
+        NTFIND_DEFFUNC(RtlDosPathNameToNtPathName_U);
+        NTFIND_DEFFUNC(RtlInitUnicodeString);
+        NTFIND_DEFFUNC(RtlNtStatusToDosError);
+#undef NTFIND_DEFFUNC
+        if(
+            !pfnNtOpenFile || !pfnNtClose || !pfnNtQueryDirectoryFile
+           || !pfnRtlDosPathNameToNtPathName_U || !pfnRtlInitUnicodeString
+           || !pfnRtlNtStatusToDosError
+            )
+        {
+            SetLastError(ERROR_INVALID_FUNCTION);
+            hNtDll = NULL;
+            return FALSE;
+        }
+        return TRUE;
+    }
+    return FALSE;
+#else
+    return TRUE;
+#endif
+}
+
 _Ret_writes_bytes_maybenull_(sizeof(FINDFILE_HANDLE))
 _Post_writable_byte_size_(sizeof(FINDFILE_HANDLE))
-static FINDFILE_HANDLE* initFindHandle_(_In_ HANDLE hDirectory, ULONG cbInitialBuffer)
+static FINDFILE_HANDLE* initFindHandle_(_In_ HANDLE hDirectory, _In_ ULONG cbInitialBuffer)
 {
     FINDFILE_HANDLE* pFindHandle;
 
@@ -89,7 +158,7 @@ static BOOLEAN freeFindHandle_(_In_reads_bytes_(sizeof(FINDFILE_HANDLE)) FINDFIL
             }
             pFindHandle->cbBuffer = 0;
             pFindHandle->pNextEntry = NULL;
-            (void)NtClose(pFindHandle->hDirectory);
+            (void)pfnNtClose(pFindHandle->hDirectory);
             pFindHandle->hDirectory = NULL;
             DeleteCriticalSection(&pFindHandle->csFindHandle);
             return (HeapFree(GetProcessHeap(), 0, pFindHandle)) ? TRUE : FALSE;
@@ -165,7 +234,7 @@ __inline void populateFindFileData_(NT_FIND_DATA* lpFindFileData, OUR_NATIVE_INF
 __inline NTSTATUS WrapNtQueryDirectoryFile_(FINDFILE_HANDLE* pFindHandle, PUNICODE_STRING FileName)
 {
     IO_STATUS_BLOCK iostat;
-    NTSTATUS ntStatus = NtQueryDirectoryFile(
+    NTSTATUS ntStatus = pfnNtQueryDirectoryFile(
         pFindHandle->hDirectory,
         NULL,
         NULL,
@@ -187,7 +256,7 @@ __inline NTSTATUS WrapNtQueryDirectoryFile_(FINDFILE_HANDLE* pFindHandle, PUNICO
             return STATUS_NO_MEMORY;
         }
         /* retry with bigger buffer */
-        ntStatus = NtQueryDirectoryFile(
+        ntStatus = pfnNtQueryDirectoryFile(
             pFindHandle->hDirectory,
             NULL,
             NULL,
@@ -220,9 +289,9 @@ EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCTSTR lpszFileName, _Out_wri
     IO_STATUS_BLOCK iostat;
     BOOLEAN bStrippedSlash = FALSE;
 
-    RtlInitUnicodeString(&usWin32FileName, lpszFileName);
+    pfnRtlInitUnicodeString(&usWin32FileName, lpszFileName);
 
-    if(!RtlDosPathNameToNtPathName_U(lpszFileName, &usNtFileName, &usWin32FileName.Buffer, &relName))
+    if(!pfnRtlDosPathNameToNtPathName_U(lpszFileName, &usNtFileName, &usWin32FileName.Buffer, &relName))
     {
         SetLastError(ERROR_PATH_NOT_FOUND);
         return INVALID_HANDLE_VALUE;
@@ -268,7 +337,7 @@ EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCTSTR lpszFileName, _Out_wri
 
     InitializeObjectAttributes(&oa, &usNtFileName, bCaseSensitive ? 0 : OBJ_CASE_INSENSITIVE, relName.ContainingDirectory, NULL);
 
-    ntStatus = NtOpenFile(
+    ntStatus = pfnNtOpenFile(
         &hDirectory,
         FILE_LIST_DIRECTORY | SYNCHRONIZE,
         &oa,
@@ -281,7 +350,7 @@ EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCTSTR lpszFileName, _Out_wri
     {
         /* put back slash for a single NtOpenFile() call */
         usNtFileName.Length += sizeof(WCHAR);
-        ntStatus = NtOpenFile(
+        ntStatus = pfnNtOpenFile(
             &hDirectory,
             FILE_LIST_DIRECTORY | SYNCHRONIZE,
             &oa,
@@ -307,11 +376,11 @@ EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCTSTR lpszFileName, _Out_wri
         }
     }
 
-    pFindHandle = initFindHandle_(hDirectory, LARGE_FIND_BUFFER_SIZE);
+    pFindHandle = initFindHandle_(hDirectory, s_uInitialBufSize);
     if(!pFindHandle)
     {
         HeapFree(GetProcessHeap(), 0, pBufToFree);
-        (void)NtClose(hDirectory);
+        (void)pfnNtClose(hDirectory);
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         return INVALID_HANDLE_VALUE;
     }
@@ -356,7 +425,7 @@ EXTERN_C BOOL WINAPI NativeFindNextFile(_In_ HANDLE hFindFile, _Out_writes_bytes
         {
             IO_STATUS_BLOCK iostat;
             NTSTATUS ntStatus;
-            ntStatus = NtQueryDirectoryFile(
+            ntStatus = pfnNtQueryDirectoryFile(
                 pFindHandle->hDirectory,
                 NULL,
                 NULL,
@@ -378,7 +447,7 @@ EXTERN_C BOOL WINAPI NativeFindNextFile(_In_ HANDLE hFindFile, _Out_writes_bytes
                     break;
                 }
                 /* retry with bigger buffer */
-                ntStatus = NtQueryDirectoryFile(
+                ntStatus = pfnNtQueryDirectoryFile(
                     pFindHandle->hDirectory,
                     NULL,
                     NULL,
