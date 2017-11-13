@@ -19,12 +19,12 @@
 #include "ntnative.h"
 
 #if defined(NTFINDFILE_DYNAMIC) && (NTFINDFILE_DYNAMIC)
-static NtOpenFile_t pfnNtOpenFile = NULL;
-static NtClose_t pfnNtClose = NULL;
-static NtQueryDirectoryFile_t pfnNtQueryDirectoryFile = NULL;
-static RtlDosPathNameToNtPathName_U_t pfnRtlDosPathNameToNtPathName_U = NULL;
-static RtlInitUnicodeString_t pfnRtlInitUnicodeString = NULL;
-static RtlNtStatusToDosError_t pfnRtlNtStatusToDosError = NULL;
+__declspec(thread) static NtOpenFile_t pfnNtOpenFile = NULL;
+__declspec(thread) static NtClose_t pfnNtClose = NULL;
+__declspec(thread) static NtQueryDirectoryFile_t pfnNtQueryDirectoryFile = NULL;
+__declspec(thread) static RtlDosPathNameToNtPathName_U_t pfnRtlDosPathNameToNtPathName_U = NULL;
+__declspec(thread) static RtlInitUnicodeString_t pfnRtlInitUnicodeString = NULL;
+__declspec(thread) static RtlNtStatusToDosError_t pfnRtlNtStatusToDosError = NULL;
 #else
 #define pfnNtOpenFile NtOpenFile
 #define pfnNtClose NtClose
@@ -49,7 +49,7 @@ typedef FILE_DIRECTORY_INFORMATION OUR_NATIVE_INFO;
 #   endif // _DEBUG
 #endif // LARGE_FIND_BUFFER_SIZE
 
-static ULONG s_uInitialBufSize = LARGE_FIND_BUFFER_SIZE;
+__declspec(thread) static ULONG s_uInitialBufSize = LARGE_FIND_BUFFER_SIZE;
 
 typedef struct _FINDFILE_HANDLE
 {
@@ -65,7 +65,7 @@ _Success_(return != 0)
 EXTERN_C BOOLEAN NativeFindInit(_In_ ULONG cbInitialBuffer)
 {
 #if defined(NTFINDFILE_DYNAMIC) && (NTFINDFILE_DYNAMIC)
-    static HMODULE hNtDll = NULL;
+    __declspec(thread) static HMODULE hNtDll = NULL;
 #endif
     if(!cbInitialBuffer)
     {

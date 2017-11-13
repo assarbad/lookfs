@@ -29,7 +29,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef __NTNATIVE_H_VER__
-#define __NTNATIVE_H_VER__ 2017100919
+#define __NTNATIVE_H_VER__ 2017111319
 #if (defined(_MSC_VER) && (_MSC_VER >= 1020)) || defined(__MCPP)
 #pragma once
 #endif // Check for "#pragma once" support
@@ -950,6 +950,13 @@ NtQueryValueKey(
 
 NTSTATUS
 NTAPI
+NtRenameKey(
+    _In_ HANDLE KeyHandle,
+    _In_ PUNICODE_STRING NewName
+);
+
+NTSTATUS
+NTAPI
 RtlValidateUnicodeString(
     _In_ _Reserved_ ULONG Flags,
     _In_ PCUNICODE_STRING String
@@ -1186,6 +1193,7 @@ typedef NTSTATUS (NTAPI *NtEnumerateKey_t)(_In_ HANDLE, _In_ ULONG, _In_ KEY_INF
 typedef NTSTATUS (NTAPI *NtEnumerateValueKey_t)(_In_ HANDLE, _In_ ULONG, _In_ KEY_VALUE_INFORMATION_CLASS, _Out_ PVOID, _In_ ULONG, _Out_ PULONG);
 typedef NTSTATUS (NTAPI *NtQueryKey_t)(_In_ HANDLE, _In_ KEY_INFORMATION_CLASS, _Out_ PVOID, _In_ ULONG, _Out_ PULONG);
 typedef NTSTATUS (NTAPI *NtQueryValueKey_t)(_In_ HANDLE, _In_ PUNICODE_STRING, _In_ KEY_VALUE_INFORMATION_CLASS, _Out_ PVOID, _In_ ULONG, _Out_ PULONG);
+typedef NTSTATUS (NTAPI *NtRenameKey_t)(_In_ HANDLE, _In_ PUNICODE_STRING);
 typedef NTSTATUS (NTAPI *RtlValidateUnicodeString_t)(_In_ _Reserved_ ULONG, _In_ PCUNICODE_STRING);
 typedef NTSTATUS (NTAPI *RtlDowncaseUnicodeString_t)(PUNICODE_STRING, _In_ PCUNICODE_STRING, _In_ BOOLEAN);
 typedef NTSTATUS (NTAPI *RtlGenerate8dot3Name_t)(_In_ PCUNICODE_STRING, _In_ BOOLEAN, _Inout_ PGENERATE_NAME_CONTEXT, _Inout_ PUNICODE_STRING);
@@ -1302,6 +1310,7 @@ typedef ULONG (NTAPI *RtlUniform_t)(PULONG);
 #define ZwEnumerateKey NtEnumerateKey
 #define ZwEnumerateValueKey NtEnumerateValueKey
 #define ZwQueryValueKey NtQueryValueKey
+#define ZwRenameKey NtRenameKey
 #define ZwCreateSection NtCreateSection
 #define ZwMapViewOfSection NtMapViewOfSection
 #define ZwUnmapViewOfSection NtUnmapViewOfSection
