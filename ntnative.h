@@ -6,7 +6,7 @@
 ///
 ///////////////////////////////////////////////////////////////////////////////
 ///
-/// Copyright (c) 2016, 2017 Oliver Schneider (assarbad.net)
+/// Copyright (c) 2016-2018 Oliver Schneider (assarbad.net)
 ///
 /// Permission is hereby granted, free of charge, to any person obtaining a
 /// copy of this software and associated documentation files (the "Software"),
@@ -29,7 +29,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef __NTNATIVE_H_VER__
-#define __NTNATIVE_H_VER__ 2017111319
+#define __NTNATIVE_H_VER__ 2018030119
 #if (defined(_MSC_VER) && (_MSC_VER >= 1020)) || defined(__MCPP)
 #pragma once
 #endif // Check for "#pragma once" support
@@ -140,6 +140,31 @@
 #   ifndef _NTDEF_
     typedef _Success_(return >= 0) LONG NTSTATUS;
     typedef NTSTATUS *PNTSTATUS;
+
+#   if defined(DDKBUILD)
+    typedef struct _STRING {
+        USHORT Length;
+        USHORT MaximumLength;
+#       ifdef MIDL_PASS
+        [size_is(MaximumLength), length_is(Length) ]
+#       endif // MIDL_PASS
+        PCHAR Buffer;
+    } STRING;
+    typedef STRING *PSTRING;
+
+    typedef STRING ANSI_STRING;
+    typedef PSTRING PANSI_STRING;
+
+    typedef STRING OEM_STRING;
+    typedef PSTRING POEM_STRING;
+
+    typedef int PROCESSINFOCLASS;
+    typedef int THREADINFOCLASS;
+    typedef int SYSTEM_INFORMATION_CLASS;
+    typedef CONST char *PCSZ;
+    typedef PSTRING PCANSI_STRING;
+#   endif
+
 #   endif
 
     typedef struct _IO_STATUS_BLOCK {
@@ -428,7 +453,7 @@ typedef struct _KEY_VALUE_PARTIAL_INFORMATION_ALIGN64 {
     UCHAR   Data[1];            // Variable size
 } KEY_VALUE_PARTIAL_INFORMATION_ALIGN64, *PKEY_VALUE_PARTIAL_INFORMATION_ALIGN64;
 
-#if (_MSC_VER  < 1500)
+#if (_MSC_VER  < 1500) || defined(DDKBUILD)
 typedef struct _KEY_VALUE_ENTRY {
     PUNICODE_STRING ValueName;
     ULONG           DataLength;
@@ -948,6 +973,7 @@ NtQueryValueKey(
     _Out_ PULONG ResultLength
 );
 
+__kernel_entry
 NTSTATUS
 NTAPI
 NtRenameKey(
