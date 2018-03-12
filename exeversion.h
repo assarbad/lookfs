@@ -35,6 +35,7 @@
 #define TEXT_COMPANY           Oliver Schneider (assarbad.net) // company
 #define TEXT_MODULE            lookfs // module name
 #define TEXT_COPYRIGHT         Written EXE_YEAR by TEXT_COMPANY (PUBLIC DOMAIN/CC0)
+#define TEXT_PORTIONSCOPYRIGHT Portions Copyright (c) 2006-2013, Brodie Thiesfield
 #define TEXT_INTERNALNAME      lookfs.exe
 #define HG_REPOSITORY          "https://bitbucket.org/assarbad/lookfs"
 

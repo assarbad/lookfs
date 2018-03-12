@@ -39,10 +39,17 @@
 
 namespace
 {
-    static const TCHAR *
-        getLastErrorText(
-        int a_nError
-        )
+    typedef struct _cmdlnargs_t
+    {
+        bool logo;
+        bool verbose;
+        bool noerror;
+        bool casesensitive;
+        bool showall;
+        bool printname;
+    } cmdlnargs_t;
+
+    static const TCHAR *getSimpleOptLastErrorText(int a_nError)
     {
         switch(a_nError)
         {
@@ -63,6 +70,38 @@ namespace
         static int iDummy;
         ::VirtualQuery(&iDummy, &mbi, sizeof(mbi));
         return HMODULE(mbi.AllocationBase);
+    }
+
+    static DWORD wrapFormatMessage_(HMODULE lpSource, DWORD dwMessageId, TCHAR** lpBuffer, va_list* Arguments)
+    {
+        DWORD dwFlags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM;
+        if(lpSource)
+        {
+            dwFlags |= FORMAT_MESSAGE_FROM_HMODULE;
+        }
+        return ::FormatMessage(dwFlags, lpSource, dwMessageId, 0, (LPTSTR)(lpBuffer), 0x20, Arguments);
+    }
+
+    static CString formatMessage(HMODULE hMod, DWORD MessageID, ...)
+    {
+        TCHAR* retBuf = 0;
+        va_list ptr;
+        va_start(ptr, MessageID);
+        if(wrapFormatMessage_(
+            hMod,
+            MessageID,
+            (TCHAR**)(&retBuf),
+            &ptr
+            ) && (0 != retBuf))
+        {
+            CString s(retBuf);
+            LocalFree((HLOCAL)(retBuf));
+            va_end(ptr);
+            s.TrimRight(_T("\r\n"));
+            return s;
+        }
+        va_end(ptr);
+        return CString();
     }
 
     static LPCTSTR getReparseType(const CReparsePoint& rp)
@@ -134,81 +173,27 @@ namespace
         }
     }
 
-    static void showVersion(const CVersionInfo& verinfo)
-    {
-        _tprintf(
-            _T("%s %s written by %s\n")
-            , verinfo[_T("OriginalFilename")]
-            , verinfo[_T("FileVersion")]
-            , verinfo[_T("CompanyName")]
-        );
-#ifdef HG_REV_ID
-        _tprintf(
-            _T("  Revision: %s\n")
-            , verinfo[_T("Mercurial revision")]
-        );
-#endif
-        _tprintf(_T("\n"));
-    }
-
-    static void showHelp(const CVersionInfo& verinfo)
-    {
-        showVersion(verinfo);
-        _tprintf(
-            _T("Syntax:\n")
-            _T("  %s [-?|-h|--help][-L|--nologo] [-v|--verbose] [-V|--version] [-E|--noerror] [-i|--case-insensitive] <path ...>\n")
-            , verinfo[_T("OriginalFilename")]
-        );
-    }
-
-    enum
-    {
-        OPT_HELP = 0,
-        OPT_VERSION,
-        OPT_NOLOGO,
-        OPT_NOERR,
-        OPT_VERBOSE,
-        OPT_NOCASE,
-        OPT_STOP,
-    };
-
-    CSimpleOpt::SOption g_Options[] = {
-        { OPT_HELP,     _T("-?"),           SO_NONE },
-        { OPT_HELP,     _T("-h"),           SO_NONE },
-        { OPT_HELP,     _T("-help"),        SO_NONE },
-        { OPT_HELP,     _T("--help"),       SO_NONE },
-        { OPT_NOLOGO,   _T("-L"),           SO_NONE },
-        { OPT_NOLOGO,   _T("--nologo"),     SO_NONE },
-        { OPT_NOERR,    _T("-E"),           SO_NONE },
-        { OPT_NOERR,    _T("--noerror"),    SO_NONE },
-        { OPT_VERBOSE,  _T("-v"),           SO_NONE },
-        { OPT_VERBOSE,  _T("--verbose"),    SO_NONE },
-        { OPT_VERBOSE,  _T("-V"),           SO_NONE },
-        { OPT_VERBOSE,  _T("--version"),    SO_NONE },
-        { OPT_NOCASE,   _T("-i"),           SO_NONE },
-        { OPT_NOCASE,   _T("--case-insensitive"), SO_NONE },
-        { OPT_STOP,     _T("--"),           SO_NONE },
-        SO_END_OF_OPTIONS,
-    };
-
-    static int showReparsePoint(WCHAR const* path, bool be_verbose, bool noerror)
+    static int showReparsePoint(WCHAR const* path, cmdlnargs_t const& args)
     {
         CReparsePoint rp(path);
         if(ERROR_SUCCESS != rp.LastError())
         {
-            _ftprintf(stderr, _T("ERROR: Win32 error code %d. Probably file (2) or path (3) not found or access issue (5)?!\n"), rp.LastError());
+            if(!args.noerror)
+            {
+                _ftprintf(stderr, _T("ERROR: Win32 error code %d. Probably file (2) or path (3) not found or access issue (5)?!\n"), rp.LastError());
+            }
             return 3;
         }
         if(rp.isReparsePoint())
         {
-            _tprintf(_T("'%ws' is a %sMicrosoft %s (virt == %d)\n"),
-                     rp.Path(),
-                     ((rp.isMicrosoftTag()) ? _T("") : _T("non-")),
-                     getReparseType(rp),
-                     rp.isVirtual()
-            );
-            if(be_verbose)
+            _tprintf(_T("%ws\n"), rp.Path());
+            if(args.verbose)
             {
+                _tprintf(_T("\tA %sMicrosoft %s (virt == %d)\n"),
+                    ((rp.isMicrosoftTag()) ? _T("") : _T("non-")),
+                    getReparseType(rp),
+                    rp.isVirtual()
+                );
 #ifdef RP_QUERY_FILE_ID
                 if(-1 != rp.FileIndex())
                 {
@@ -218,16 +203,23 @@ namespace
             }
             if(rp.isNameSurrogate())
             {
-                _tprintf(_T("\tPrint name: %ws\n"), rp.PrintName());
-                if(be_verbose)
+                if(!args.verbose)
                 {
+                    if(!args.printname)
+                        _tprintf(_T("\t-> %ws\n"), rp.SubstName());
+                    else
+                        _tprintf(_T("\t-> %ws\n"), rp.PrintName());
+                }
+                else
+                {
+                    _tprintf(_T("\tPrint name: %ws\n"), rp.PrintName());
                     _tprintf(_T("\tSubst name: %ws\n"), rp.SubstName());
                     _tprintf(_T("\tSubst name: %ws (w32)\n"), rp.CanonicalSubstName());
                 }
             }
-            if(!rp.isMicrosoftTag() || be_verbose)
+            if(!rp.isMicrosoftTag() || args.verbose)
             {
-                if(be_verbose)
+                if(args.verbose)
                 {
                     _tprintf(_T("\tTag       : %08X\n"), rp.ReparseTag());
                 }
@@ -248,11 +240,11 @@ namespace
         }
         else
         {
-            if(!noerror) // show no errors if asked not to
+            if(!args.noerror) // show no errors if asked not to
             {
                 _ftprintf(stderr, _T("ERROR: '%ws' is not a reparse point\n"), rp.Path());
             }
-            if(be_verbose)
+            if(args.verbose)
             {
 #ifdef RP_QUERY_FILE_ID
                 if(-1 != rp.FileIndex())
@@ -277,8 +269,8 @@ namespace
         NT_FIND_DATA m_fd;
         LONG m_lError;
         // hide these
-        CPathFinder(CPathFinder&);
-        CPathFinder& operator=(CPathFinder&);
+        CPathFinder(CPathFinder&); // hide
+        CPathFinder& operator=(CPathFinder&); // hide
     public:
         CPathFinder(TCHAR const* szPath, BOOLEAN bCaseSensitive = FALSE)
             : m_bValid(FALSE)
@@ -288,6 +280,7 @@ namespace
             , m_sSearchMask(_T("*"))
             , m_lError(ERROR_SUCCESS)
         {
+            memset(&m_fd, 0, sizeof(m_fd));
             if(!szPath || m_sOriginalPath.IsEmpty())
             {
                 _TRACE(_T("Invalid szPath == %s"), szPath);
@@ -297,7 +290,6 @@ namespace
             {
                 CString sSearchPath(m_sDirectory.GetString());
                 sSearchPath += m_sSearchMask;
-                memset(&m_fd, 0, sizeof(m_fd));
                 m_hFind = NativeFindFirstFile(sSearchPath, &m_fd, bCaseSensitive);
                 if(INVALID_HANDLE_VALUE != m_hFind)
                 {
@@ -313,8 +305,8 @@ namespace
                 }
                 else
                 {
-                    m_bValid = FALSE;
                     m_lError = GetLastError();
+                    m_bValid = FALSE;
                     //_TRACE(_T("NativeFindFirstFile(\"%s\", %p, %s) -> INVALID_HANDLE_VALUE (error: %d)"), sSearchPath.GetString(), &m_fd, bCaseSensitive ? _T("TRUE") : _T("FALSE"), m_lError);
                 }
             }
@@ -364,8 +356,16 @@ namespace
 
         inline CString getFullPathName() const
         {
-            CString p(m_sDirectory);
-            p += m_fd.cFileName;
+            CString p;
+            if(m_bValid)
+            {
+                p = m_sDirectory;
+                p += m_fd.cFileName;
+            }
+            else
+            {
+                p = m_sOriginalPath;
+            }
             return p;
         }
 
@@ -414,14 +414,16 @@ namespace
                 }
             }
             DWORD dwAttr = ::GetFileAttributes(m_sNormalizedPath);
+            // For all we know it's a file or a path with wildcard characters at
+            // this point. But it could also be a filename instead of a wildcard.
             if((INVALID_FILE_ATTRIBUTES == dwAttr) || !(dwAttr & FILE_ATTRIBUTE_DIRECTORY))
             {
-                // For all we know it's a file or a path with wildcard characters at this point
                 int iLastSlash = m_sNormalizedPath.ReverseFind(_T('\\'));
                 // If there was no slash before the wildcard/filename, something else is fishy ... bail out
                 if(-1 == iLastSlash)
                 {
-                    _TRACE(_T("[ERROR] Could not find last slash in %s"), m_sNormalizedPath.GetString());
+                    _TRACE(_T("[ERROR:%d] Could not find last slash in \"%s\" (%s)."), GetLastError(), m_sNormalizedPath.GetString(), formatMessage(NULL, GetLastError()).GetString());
+                    m_lError = GetLastError();
                     m_bValid = FALSE;
                     return m_bValid;
                 }
@@ -443,17 +445,49 @@ namespace
         }
     };
 
-    int traversePath(WCHAR const* szPath, bool be_verbose, bool noerror, bool casesensitive)
+    static void showVersion(const CVersionInfo& verinfo)
+    {
+        _tprintf(
+            _T("%s %s written by %s\n")
+            , verinfo[_T("OriginalFilename")]
+            , verinfo[_T("FileVersion")]
+            , verinfo[_T("CompanyName")]
+        );
+        _tprintf(_T("%s\n"), verinfo[_T("Portions Copyright")]);
+#ifdef HG_REV_ID
+        _tprintf(
+            _T("  Revision: %s\n")
+            , verinfo[_T("Mercurial revision")]
+        );
+#endif
+        _tprintf(_T("\n"));
+    }
+
+    static void showHelp(const CVersionInfo& verinfo)
+    {
+        showVersion(verinfo);
+        _tprintf(
+            _T("Syntax:\n")
+            _T("  %s [-?|-h|--help][-L|--nologo] [-v|--verbose] [-V|--version] [-E|--noerror] [-i|--case-insensitive] <path ...>\n")
+            , verinfo[_T("OriginalFilename")]
+        );
+    }
+
+    int traversePath(WCHAR const* szPath, cmdlnargs_t const& args)
     {
         if(!szPath)
             return 1; // error
-        CPathFinder pathFinder(szPath, casesensitive);
+        CPathFinder pathFinder(szPath, args.casesensitive);
+        int iRet = 0;
         do
         {
             if(!pathFinder)
             {
-                _ftprintf(stderr, _T("[ERROR:%d] Failed to read contents of %s\n"), pathFinder.LastError(), pathFinder.getFullPathName().GetString());
-                return 0;
+                if(!args.noerror)
+                {
+                    _ftprintf(stderr, _T("[ERROR:%d] Failed to read contents of \"%s\" (%s).\n"), pathFinder.LastError(), pathFinder.getFullPathName().GetString(), formatMessage(NULL, pathFinder.LastError()).GetString());
+                }
+                return 1;
             }
             NT_FIND_DATA const& fd = pathFinder.getFindData();
             CString path(pathFinder.getFullPathName());
@@ -463,17 +497,64 @@ namespace
                 {
                     path.AppendFormat(_T("\\%s"), pathFinder.getSearchMask());
                     // Recurse into subdirectory
-                    (void)traversePath(path, be_verbose, noerror, casesensitive);
+                    int err = traversePath(path, args);
+                    if(err)
+                    {
+                        iRet = err;
+                    }
                 }
                 else
                 {
                     // Don't follow reparse points in any case
-                    (void)showReparsePoint(path, be_verbose, noerror);
+                    int err = showReparsePoint(path, args);
+                    if(err)
+                    {
+                        iRet = err;
+                    }
                 }
             }
-        } while (pathFinder.next());
-        return 0;
+        } while(pathFinder.next());
+        return iRet;
     }
+
+    enum
+    {
+        OPT_HELP = 0,
+        OPT_VERSION,
+        OPT_NOLOGO,
+        OPT_NOERR,
+        OPT_VERBOSE,
+        OPT_NOCASE,
+        OPT_SHOWALL,
+        OPT_PRINTNAME,
+        OPT_STOP,
+    };
+
+    CSimpleOpt::SOption g_Options[] = {
+        { OPT_HELP,     _T("-?"),           SO_NONE },
+        { OPT_HELP,     _T("-h"),           SO_NONE },
+        { OPT_HELP,     _T("-help"),        SO_NONE },
+        { OPT_HELP,     _T("--help"),       SO_NONE },
+        { OPT_NOLOGO,   _T("-L"),           SO_NONE },
+        { OPT_NOLOGO,   _T("--nologo"),     SO_NONE },
+        { OPT_NOERR,    _T("-E"),           SO_NONE },
+        { OPT_NOERR,    _T("--noerror"),    SO_NONE },
+        { OPT_VERBOSE,  _T("-v"),           SO_NONE },
+        { OPT_VERBOSE,  _T("--verbose"),    SO_NONE },
+        { OPT_VERSION,  _T("-V"),           SO_NONE },
+        { OPT_VERSION,  _T("--version"),    SO_NONE },
+        { OPT_NOCASE,   _T("-i"),           SO_NONE },
+        { OPT_NOCASE,   _T("--case-insensitive"), SO_NONE },
+        { OPT_SHOWALL,  _T("-a"),           SO_NONE },
+        { OPT_SHOWALL,  _T("--showall"),    SO_NONE },
+        { OPT_SHOWALL,  _T("--show-all"),   SO_NONE },
+        { OPT_PRINTNAME,_T("-p"),           SO_NONE },
+        { OPT_PRINTNAME,_T("--printname"),  SO_NONE },
+        { OPT_PRINTNAME,_T("--print-name"), SO_NONE },
+        { OPT_STOP,     _T("--"),           SO_NONE },
+        SO_END_OF_OPTIONS,
+    };
+
 }
 
 int __cdecl _tmain(int argc, _TCHAR *argv[])
@@ -484,7 +565,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
     CVersionInfo verinfo(getInstanceHandle());
     CSimpleOpt args(argc, argv, g_Options, SO_O_NOERR | SO_O_EXACT);
 
-    bool show_logo = true, be_verbose = false, noerror = false, casesensitive = true;
+    cmdlnargs_t cmdlnargs = {true, false, false, true, false, false};
 
     while(args.Next())
     {
@@ -493,7 +574,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
             _ftprintf(
                 stderr
                 , _T("%s: '%s' (use --help to get command line help)\n")
-                , getLastErrorText(args.LastError()), args.OptionText()
+                , getSimpleOptLastErrorText(args.LastError()), args.OptionText()
             );
             continue;
         }
@@ -506,16 +587,22 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
             showVersion(verinfo);
             return 0;
         case OPT_NOLOGO:
-            show_logo = false;
+            cmdlnargs.logo = false;
             break;
         case OPT_NOERR:
-            noerror = true;
+            cmdlnargs.noerror = true;
             break;
         case OPT_VERBOSE:
-            be_verbose = true;
+            cmdlnargs.verbose = true;
             break;
         case OPT_NOCASE:
-            casesensitive = false;
+            cmdlnargs.casesensitive = false;
+            break;
+        case OPT_SHOWALL:
+            cmdlnargs.showall = true;
+            break;
+        case OPT_PRINTNAME:
+            cmdlnargs.printname = true;
             break;
         case OPT_STOP:
             args.Stop();
@@ -523,9 +610,17 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
         }
     }
 
-    if(show_logo)
+    if(cmdlnargs.logo)
     {
-        showVersion(verinfo);
+        if(!args.FileCount())
+        {
+            showHelp(verinfo);
+            return 0;
+        }
+        else
+        {
+            showVersion(verinfo);
+        }
     }
 
     int retval = 0;
@@ -536,7 +631,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
         _CrtCheckMemory();
 #endif // _DEBUG
         
-        int err = traversePath(args.File(n), be_verbose, noerror, casesensitive);
+        int err = traversePath(args.File(n), cmdlnargs);
         if(err > retval)
         {
             retval = err;
