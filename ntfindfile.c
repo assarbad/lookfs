@@ -37,8 +37,20 @@ __declspec(thread) static RtlNtStatusToDosError_t pfnRtlNtStatusToDosError = NUL
 #define SetLastErrorFromNtError(x) SetLastError((LONG)pfnRtlNtStatusToDosError(x))
 
 /* adjust these two items if you want to query another info class */
-typedef FILE_DIRECTORY_INFORMATION OUR_NATIVE_INFO;
-#define OurNativeInfoClass FileInformationDirectory
+#define OUR_NATIVE_INFO FILE_BOTH_DIR_INFORMATION
+#define OurNativeInfoClass FileInformationBothDirectory
+/*
+Possible pairings:
+
+FILE_DIRECTORY_INFORMATION -> FileInformationDirectory
+FILE_BOTH_DIR_INFORMATION -> FileInformationBothDirectory
+FILE_ID_FULL_DIR_INFORMATION ->FileInformationIdFullDirectory
+FILE_ID_BOTH_DIR_INFORMATION ->FileInformationIdBothDirectory
+
+More exist, check out ntnative.h
+
+STATUS_INVALID_INFO_CLASS
+*/
 
 /* adjust this to use larger buffers for querying the entries from a directory */
 #ifndef LARGE_FIND_BUFFER_SIZE
@@ -67,10 +79,7 @@ EXTERN_C BOOLEAN NativeFindInit(_In_ ULONG cbInitialBuffer)
 #if defined(NTFINDFILE_DYNAMIC) && (NTFINDFILE_DYNAMIC)
     __declspec(thread) static HMODULE hNtDll = NULL;
 #endif
-    if(!cbInitialBuffer)
-    {
-        s_uInitialBufSize = LARGE_FIND_BUFFER_SIZE;
-    }
+    s_uInitialBufSize = (cbInitialBuffer) ? cbInitialBuffer : LARGE_FIND_BUFFER_SIZE;
 #if defined(NTFINDFILE_DYNAMIC) && (NTFINDFILE_DYNAMIC)
     if(!hNtDll)
     {
@@ -194,6 +203,11 @@ static BOOLEAN doubleFindHandleBufferSize_(_In_reads_bytes_(sizeof(FINDFILE_HAND
                         LeaveCriticalSection(&pFindHandle->csFindHandle);
                         return FALSE; /* we assume this is an OOM condition */
                     }
+                    if(cbBuffer > s_uInitialBufSize)
+                    {
+                        // Bump the initial buffer size to the biggest we've seen so far
+                        (void)InterlockedExchange((LONG*)&s_uInitialBufSize, (LONG)cbBuffer);
+                    }
                     pFindHandle->cbBuffer = cbBuffer;
                     pFindHandle->pBuffer = pNew;
                     LeaveCriticalSection(&pFindHandle->csFindHandle);
@@ -211,11 +225,13 @@ static BOOLEAN doubleFindHandleBufferSize_(_In_reads_bytes_(sizeof(FINDFILE_HAND
 __inline void populateFindFileData_(NT_FIND_DATA* lpFindFileData, OUR_NATIVE_INFO* dirinfo, FINDFILE_HANDLE* pFindHandle)
 {
     /* populate the find data */
-    lpFindFileData->dwFileAttributes = dirinfo->FileAttributes;
+    DWORD dwAttr = lpFindFileData->dwFileAttributes = dirinfo->FileAttributes;
     lpFindFileData->ftCreationTime = *(FILETIME*)&dirinfo->CreationTime;
     lpFindFileData->ftLastAccessTime = *(FILETIME*)&dirinfo->LastAccessTime;
     lpFindFileData->ftLastWriteTime = *(FILETIME*)&dirinfo->LastWriteTime;
-    lpFindFileData->nFileSize = dirinfo->AllocationSize.QuadPart;
+    lpFindFileData->nAllocSize = dirinfo->AllocationSize.QuadPart;
+    lpFindFileData->nFileSize = dirinfo->EndOfFile.QuadPart;
+    lpFindFileData->dwReparseTag = (dwAttr & FILE_ATTRIBUTE_REPARSE_POINT) ? dirinfo->EaSize : 0;
 
     (void)memmove(&lpFindFileData->cFileName, &dirinfo->FileName, dirinfo->FileNameLength);
     lpFindFileData->cFileName[dirinfo->FileNameLength / sizeof(WCHAR)] = 0;
@@ -504,4 +520,14 @@ EXTERN_C BOOL NativeFindClose(_In_opt_ HANDLE hFindFile)
         return FALSE;
     }
     return FALSE;
+}
+
+EXTERN_C NTSTATUS WINAPI NativeFindLastStatus(_In_ HANDLE hFindFile)
+{
+    FINDFILE_HANDLE* pFindHandle = (FINDFILE_HANDLE*)hFindFile;
+    if(pFindHandle)
+    {
+        return pFindHandle->ntStatus;
+    }
+    return STATUS_INVALID_PARAMETER;
 }

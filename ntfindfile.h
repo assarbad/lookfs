@@ -7,7 +7,7 @@
 ///
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef __NTFINDFILE_H_VER__
-#define __NTFINDFILE_H_VER__ 2017100919
+#define __NTFINDFILE_H_VER__ 2018031322
 #if (defined(_MSC_VER) && (_MSC_VER >= 1020)) || defined(__MCPP)
 #pragma once
 #endif /* Check for #pragma support */
@@ -78,12 +78,14 @@
 
 typedef struct _NT_FIND_DATA
 {
-    DWORD dwFileAttributes;
     FILETIME ftCreationTime;
     FILETIME ftLastAccessTime;
     FILETIME ftLastWriteTime;
     LONGLONG nFileSize;
-    _Field_z_ WCHAR  cFileName[MAX_PATH];
+    LONGLONG nAllocSize;
+    DWORD dwFileAttributes;
+    DWORD dwReparseTag;
+    _Field_z_ WCHAR cFileName[MAX_PATH];
 } NT_FIND_DATA, *PNT_FIND_DATA, *LPNT_FIND_DATA;
 
 _Success_(return != 0)
@@ -97,5 +99,7 @@ EXTERN_C BOOL WINAPI NativeFindNextFile(_In_ HANDLE hFindFile, _Out_writes_bytes
 
 _Success_(return != 0)
 EXTERN_C BOOL NativeFindClose(_In_opt_ HANDLE hFindFile);
+
+EXTERN_C NTSTATUS WINAPI NativeFindLastStatus(_In_ HANDLE hFindFile);
 
 #endif // __NTFINDFILE_H_VER__

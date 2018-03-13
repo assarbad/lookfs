@@ -30,6 +30,7 @@
 #define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS
 #include <atlbase.h>
 #include <atlstr.h>
+#include "lookfs.hpp"
 #include "thirdparty/simpleopt/SimpleOpt.h"
 #include "ntnative.h"
 #include "ntfindfile.h"
@@ -47,7 +48,9 @@ namespace
         bool casesensitive;
         bool showall;
         bool printname;
-    } cmdlnargs_t;
+    } settings_t;
+
+    static settings_t g_settings = { true, false, false, true, false, false };
 
     static const TCHAR *getSimpleOptLastErrorText(int a_nError)
     {
@@ -173,12 +176,12 @@ namespace
         }
     }
 
-    static int showReparsePoint(WCHAR const* path, cmdlnargs_t const& args)
+    static int showReparsePoint(WCHAR const* path, settings_t const& sett)
     {
         CReparsePoint rp(path);
         if(ERROR_SUCCESS != rp.LastError())
         {
-            if(!args.noerror)
+            if(!sett.noerror)
             {
                 _ftprintf(stderr, _T("ERROR: Win32 error code %d. Probably file (2) or path (3) not found or access issue (5)?!\n"), rp.LastError());
             }
@@ -187,7 +190,7 @@ namespace
         if(rp.isReparsePoint())
         {
             _tprintf(_T("%ws\n"), rp.Path());
-            if(args.verbose)
+            if(sett.verbose)
             {
                 _tprintf(_T("\tA %sMicrosoft %s (virt == %d)\n"),
                     ((rp.isMicrosoftTag()) ? _T("") : _T("non-")),
@@ -203,9 +206,9 @@ namespace
             }
             if(rp.isNameSurrogate())
             {
-                if(!args.verbose)
+                if(!sett.verbose)
                 {
-                    if(!args.printname)
+                    if(!sett.printname)
                         _tprintf(_T("\t-> %ws\n"), rp.SubstName());
                     else
                         _tprintf(_T("\t-> %ws\n"), rp.PrintName());
@@ -217,9 +220,9 @@ namespace
                     _tprintf(_T("\tSubst name: %ws (w32)\n"), rp.CanonicalSubstName());
                 }
             }
-            if(!rp.isMicrosoftTag() || args.verbose)
+            if(!rp.isMicrosoftTag() || sett.verbose)
             {
-                if(args.verbose)
+                if(sett.verbose)
                 {
                     _tprintf(_T("\tTag       : %08X\n"), rp.ReparseTag());
                 }
@@ -240,11 +243,11 @@ namespace
         }
         else
         {
-            if(!args.noerror) // show no errors if asked not to
+            if(!sett.noerror) // show no errors if asked not to
             {
                 _ftprintf(stderr, _T("ERROR: '%ws' is not a reparse point\n"), rp.Path());
             }
-            if(args.verbose)
+            if(sett.verbose)
             {
 #ifdef RP_QUERY_FILE_ID
                 if(-1 != rp.FileIndex())
@@ -354,6 +357,11 @@ namespace
             return m_fd;
         }
 
+        inline CString getNormalizedPathName() const
+        {
+            return m_sNormalizedPath;
+        }
+
         inline CString getFullPathName() const
         {
             CString p;
@@ -448,19 +456,20 @@ namespace
     static void showVersion(const CVersionInfo& verinfo)
     {
         _tprintf(
-            _T("%s %s written by %s\n")
+            _T("%s %s\n")
             , verinfo[_T("OriginalFilename")]
             , verinfo[_T("FileVersion")]
-            , verinfo[_T("CompanyName")]
         );
-        _tprintf(_T("%s\n"), verinfo[_T("Portions Copyright")]);
 #ifdef HG_REV_ID
         _tprintf(
             _T("  Revision: %s\n")
             , verinfo[_T("Mercurial revision")]
         );
 #endif
-        _tprintf(_T("\n"));
+        _tprintf(
+            _T("  %s\n\n")
+            , verinfo[_T("LegalCopyright")]
+        );
     }
 
     static void showHelp(const CVersionInfo& verinfo)
@@ -468,22 +477,37 @@ namespace
         showVersion(verinfo);
         _tprintf(
             _T("Syntax:\n")
-            _T("  %s [-?|-h|--help][-L|--nologo] [-v|--verbose] [-V|--version] [-E|--noerror] [-i|--case-insensitive] <path ...>\n")
+            _T("  %s [-?|-h|--help|...] [--] [path...]\n")
             , verinfo[_T("OriginalFilename")]
         );
+        _tprintf(_T("  -?, -h, --help\n\tShow this help and exit\n"));
+        _tprintf(_T("  -V, --version\n\tShow program version and exit\n"));
+        _tprintf(_T("  -L, --nologo\n\tDon't show program banner text\n"));
+        _tprintf(_T("  -E, --noerror\n\tDon't show errors, only show output from success\n"));
+        _tprintf(_T("  -v, --verbose\n\tShow more verbose output\n"));
+        _tprintf(_T("  -i, --nocase, --case-insensitive\n\tWork case-insensitive\n"));
+        _tprintf(_T("  -a, --all, --show-all\n\tShow each file system entity encountered, not just \"special\" ones\n"));
+        _tprintf(_T("  -p, --printname, --print-name\n\tInstead of the substitute name, show print names for reparse points\n"));
+        _tprintf(_T("  --\n\tDelimiter for options. Everything after it will be interpreted as paths\n"));
+
+#ifdef TEXT_PORTIONSCOPYRIGHT
+        _tprintf(_T("\n") _T(ANSISTRING(TEXT_PORTIONSCOPYRIGHT)) _T("\n"));
+#endif
     }
 
-    int traversePath(WCHAR const* szPath, cmdlnargs_t const& args)
+    int traversePath(WCHAR const* szPath, settings_t const& sett)
     {
         if(!szPath)
+        {
             return 1; // error
-        CPathFinder pathFinder(szPath, args.casesensitive);
+        }
+        CPathFinder pathFinder(szPath, sett.casesensitive);
         int iRet = 0;
         do
         {
             if(!pathFinder)
             {
-                if(!args.noerror)
+                if(!sett.noerror)
                 {
                     _ftprintf(stderr, _T("[ERROR:%d] Failed to read contents of \"%s\" (%s).\n"), pathFinder.LastError(), pathFinder.getFullPathName().GetString(), formatMessage(NULL, pathFinder.LastError()).GetString());
                 }
@@ -491,26 +515,31 @@ namespace
             }
             NT_FIND_DATA const& fd = pathFinder.getFindData();
             CString path(pathFinder.getFullPathName());
+            if(sett.showall)
+            {
+                _tprintf(_T("%s\n"), path.GetString());
+            }
             if(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
             {
+                // Don't follow reparse points in any case
                 if(!(fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT))
                 {
                     path.AppendFormat(_T("\\%s"), pathFinder.getSearchMask());
                     // Recurse into subdirectory
-                    int err = traversePath(path, args);
+                    int err = traversePath(path, sett);
                     if(err)
                     {
                         iRet = err;
                     }
                 }
-                else
+            }
+            // Not only directories can be reparse points
+            if(fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+            {
+                int err = showReparsePoint(path, sett);
+                if(err)
                 {
-                    // Don't follow reparse points in any case
-                    int err = showReparsePoint(path, args);
-                    if(err)
-                    {
-                        iRet = err;
-                    }
+                    iRet = err;
                 }
             }
         } while(pathFinder.next());
@@ -544,9 +573,10 @@ namespace
         { OPT_VERSION,  _T("-V"),           SO_NONE },
         { OPT_VERSION,  _T("--version"),    SO_NONE },
         { OPT_NOCASE,   _T("-i"),           SO_NONE },
+        { OPT_NOCASE,   _T("--nocase"),     SO_NONE },
         { OPT_NOCASE,   _T("--case-insensitive"), SO_NONE },
         { OPT_SHOWALL,  _T("-a"),           SO_NONE },
-        { OPT_SHOWALL,  _T("--showall"),    SO_NONE },
+        { OPT_SHOWALL,  _T("--all"),        SO_NONE },
         { OPT_SHOWALL,  _T("--show-all"),   SO_NONE },
         { OPT_PRINTNAME,_T("-p"),           SO_NONE },
         { OPT_PRINTNAME,_T("--printname"),  SO_NONE },
@@ -563,9 +593,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
     _CrtSetDbgFlag(_CRTDBG_CHECK_ALWAYS_DF | _CRTDBG_ALLOC_MEM_DF);
 #endif // _DEBUG
     CVersionInfo verinfo(getInstanceHandle());
-    CSimpleOpt args(argc, argv, g_Options, SO_O_NOERR | SO_O_EXACT);
-
-    cmdlnargs_t cmdlnargs = {true, false, false, true, false, false};
+    CSimpleOpt args(argc, argv, g_Options, SO_O_EXACT);
 
     while(args.Next())
     {
@@ -587,22 +615,22 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
             showVersion(verinfo);
             return 0;
         case OPT_NOLOGO:
-            cmdlnargs.logo = false;
+            g_settings.logo = false;
             break;
         case OPT_NOERR:
-            cmdlnargs.noerror = true;
+            g_settings.noerror = true;
             break;
         case OPT_VERBOSE:
-            cmdlnargs.verbose = true;
+            g_settings.verbose = true;
             break;
         case OPT_NOCASE:
-            cmdlnargs.casesensitive = false;
+            g_settings.casesensitive = false;
             break;
         case OPT_SHOWALL:
-            cmdlnargs.showall = true;
+            g_settings.showall = true;
             break;
         case OPT_PRINTNAME:
-            cmdlnargs.printname = true;
+            g_settings.printname = true;
             break;
         case OPT_STOP:
             args.Stop();
@@ -610,7 +638,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
         }
     }
 
-    if(cmdlnargs.logo)
+    if(g_settings.logo)
     {
         if(!args.FileCount())
         {
@@ -631,7 +659,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
         _CrtCheckMemory();
 #endif // _DEBUG
         
-        int err = traversePath(args.File(n), cmdlnargs);
+        int err = traversePath(args.File(n), g_settings);
         if(err > retval)
         {
             retval = err;
