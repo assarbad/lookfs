@@ -206,7 +206,7 @@ static BOOLEAN doubleFindHandleBufferSize_(_In_reads_bytes_(sizeof(FINDFILE_HAND
                     if(cbBuffer > s_uInitialBufSize)
                     {
                         // Bump the initial buffer size to the biggest we've seen so far
-                        (void)InterlockedExchange((LONG*)&s_uInitialBufSize, (LONG)cbBuffer);
+                        s_uInitialBufSize = cbBuffer;
                     }
                     pFindHandle->cbBuffer = cbBuffer;
                     pFindHandle->pBuffer = pNew;
