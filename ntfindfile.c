@@ -81,10 +81,10 @@ EXTERN_C BOOLEAN NativeFindInit(_In_ ULONG cbInitialBuffer)
 #endif
     s_uInitialBufSize = (cbInitialBuffer) ? cbInitialBuffer : LARGE_FIND_BUFFER_SIZE;
 #if defined(NTFINDFILE_DYNAMIC) && (NTFINDFILE_DYNAMIC)
-    if(!hNtDll)
+    if (!hNtDll)
     {
         hNtDll = GetModuleHandle(_T("ntdll.dll"));
-        if(!hNtDll)
+        if (!hNtDll)
         {
             SetLastError(ERROR_MOD_NOT_FOUND);
             return FALSE;
@@ -97,10 +97,10 @@ EXTERN_C BOOLEAN NativeFindInit(_In_ ULONG cbInitialBuffer)
         NTFIND_DEFFUNC(RtlInitUnicodeString);
         NTFIND_DEFFUNC(RtlNtStatusToDosError);
 #undef NTFIND_DEFFUNC
-        if(
+        if (
             !pfnNtOpenFile || !pfnNtClose || !pfnNtQueryDirectoryFile
-           || !pfnRtlDosPathNameToNtPathName_U || !pfnRtlInitUnicodeString
-           || !pfnRtlNtStatusToDosError
+            || !pfnRtlDosPathNameToNtPathName_U || !pfnRtlInitUnicodeString
+            || !pfnRtlNtStatusToDosError
             )
         {
             SetLastError(ERROR_INVALID_FUNCTION);
@@ -123,24 +123,24 @@ static FINDFILE_HANDLE* initFindHandle_(_In_ HANDLE hDirectory, _In_ ULONG cbIni
 
     pFindHandle = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(*pFindHandle));
 
-    if(pFindHandle)
+    if (pFindHandle)
     {
         pFindHandle->hDirectory = hDirectory;
         __try
         {
             InitializeCriticalSection(&pFindHandle->csFindHandle);
         }
-        __except(EXCEPTION_EXECUTE_HANDLER)
+        __except (EXCEPTION_EXECUTE_HANDLER)
         {
             SetLastErrorFromNtError(GetExceptionCode());
             (void)HeapFree(GetProcessHeap(), 0, pFindHandle);
             return NULL;
         }
         /* no one knows about this internal buffer, yet, so we needn't lock anything here */
-        if(cbInitialBuffer)
+        if (cbInitialBuffer)
         {
             pFindHandle->pBuffer = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, cbInitialBuffer);
-            if(!pFindHandle->pBuffer)
+            if (!pFindHandle->pBuffer)
             {
                 pFindHandle->cbBuffer = 0;
                 DeleteCriticalSection(&pFindHandle->csFindHandle);
@@ -156,11 +156,11 @@ static FINDFILE_HANDLE* initFindHandle_(_In_ HANDLE hDirectory, _In_ ULONG cbIni
 
 static BOOLEAN freeFindHandle_(_In_reads_bytes_(sizeof(FINDFILE_HANDLE)) FINDFILE_HANDLE* pFindHandle)
 {
-    if(pFindHandle)
+    if (pFindHandle)
     {
-        if(TryEnterCriticalSection(&pFindHandle->csFindHandle))
+        if (TryEnterCriticalSection(&pFindHandle->csFindHandle))
         {
-            if(pFindHandle->pBuffer)
+            if (pFindHandle->pBuffer)
             {
                 HeapFree(GetProcessHeap(), 0, pFindHandle->pBuffer);
                 pFindHandle->pBuffer = NULL;
@@ -179,15 +179,15 @@ static BOOLEAN freeFindHandle_(_In_reads_bytes_(sizeof(FINDFILE_HANDLE)) FINDFIL
 /* doubles the size of the internal buffer ... leaves it zeroed out! (i.e. this is destructive!) */
 static BOOLEAN doubleFindHandleBufferSize_(_In_reads_bytes_(sizeof(FINDFILE_HANDLE)) FINDFILE_HANDLE* pFindHandle)
 {
-    if(pFindHandle)
+    if (pFindHandle)
     {
-        if(TryEnterCriticalSection(&pFindHandle->csFindHandle))
+        if (TryEnterCriticalSection(&pFindHandle->csFindHandle))
         {
-            if(pFindHandle->pBuffer)
+            if (pFindHandle->pBuffer)
             {
                 const ULONG cbBuffer = pFindHandle->cbBuffer * 2;
                 /* we free before allocating a bigger chunk of memory */
-                if(!HeapFree(GetProcessHeap(), 0, pFindHandle->pBuffer))
+                if (!HeapFree(GetProcessHeap(), 0, pFindHandle->pBuffer))
                 {
                     LeaveCriticalSection(&pFindHandle->csFindHandle);
                     return FALSE; /* buffer still valid, but no bigger than before */
@@ -195,15 +195,15 @@ static BOOLEAN doubleFindHandleBufferSize_(_In_reads_bytes_(sizeof(FINDFILE_HAND
                 pFindHandle->pBuffer = NULL;
                 pFindHandle->pNextEntry = NULL;
                 /* be cautious about integer overflows */
-                if(cbBuffer > pFindHandle->cbBuffer)
+                if (cbBuffer > pFindHandle->cbBuffer)
                 {
                     PVOID pNew = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, cbBuffer);
-                    if(!pNew)
+                    if (!pNew)
                     {
                         LeaveCriticalSection(&pFindHandle->csFindHandle);
                         return FALSE; /* we assume this is an OOM condition */
                     }
-                    if(cbBuffer > s_uInitialBufSize)
+                    if (cbBuffer > s_uInitialBufSize)
                     {
                         // Bump the initial buffer size to the biggest we've seen so far
                         s_uInitialBufSize = cbBuffer;
@@ -236,7 +236,7 @@ __inline void populateFindFileData_(NT_FIND_DATA* lpFindFileData, OUR_NATIVE_INF
     (void)memmove(&lpFindFileData->cFileName, &dirinfo->FileName, dirinfo->FileNameLength);
     lpFindFileData->cFileName[dirinfo->FileNameLength / sizeof(WCHAR)] = 0;
 
-    if(dirinfo->NextEntryOffset)
+    if (dirinfo->NextEntryOffset)
     {
         pFindHandle->pNextEntry = (PUCHAR)dirinfo + dirinfo->NextEntryOffset;
     }
@@ -264,10 +264,10 @@ __inline NTSTATUS WrapNtQueryDirectoryFile_(FINDFILE_HANDLE* pFindHandle, PUNICO
         FALSE
     );
 
-    while(STATUS_BUFFER_OVERFLOW == ntStatus)
+    while (STATUS_BUFFER_OVERFLOW == ntStatus)
     {
         /* resize the buffer */
-        if(!doubleFindHandleBufferSize_(pFindHandle))
+        if (!doubleFindHandleBufferSize_(pFindHandle))
         {
             return STATUS_NO_MEMORY;
         }
@@ -307,7 +307,7 @@ EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCTSTR lpszFileName, _Out_wri
 
     pfnRtlInitUnicodeString(&usWin32FileName, lpszFileName);
 
-    if(!pfnRtlDosPathNameToNtPathName_U(lpszFileName, &usNtFileName, &usWin32FileName.Buffer, &relName))
+    if (!pfnRtlDosPathNameToNtPathName_U(lpszFileName, &usNtFileName, &usWin32FileName.Buffer, &relName))
     {
         SetLastError(ERROR_PATH_NOT_FOUND);
         return INVALID_HANDLE_VALUE;
@@ -315,7 +315,7 @@ EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCTSTR lpszFileName, _Out_wri
 
     pBufToFree = usNtFileName.Buffer;
 
-    if(usWin32FileName.Buffer)
+    if (usWin32FileName.Buffer)
     {
         usWin32FileName.Length = usNtFileName.Length - (USHORT)((ULONG_PTR)usWin32FileName.Buffer - (ULONG_PTR)usNtFileName.Buffer);
     }
@@ -325,9 +325,9 @@ EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCTSTR lpszFileName, _Out_wri
     }
     usWin32FileName.MaximumLength = usWin32FileName.Length;
 
-    if(relName.RelativeName.Length && relName.RelativeName.Buffer != usWin32FileName.Buffer)
+    if (relName.RelativeName.Length && relName.RelativeName.Buffer != usWin32FileName.Buffer)
     {
-        if(usWin32FileName.Buffer)
+        if (usWin32FileName.Buffer)
         {
             usNtFileName.Buffer = relName.RelativeName.Buffer;
             usNtFileName.Length = (USHORT)((ULONG_PTR)usWin32FileName.Buffer - (ULONG_PTR)relName.RelativeName.Buffer);
@@ -337,7 +337,7 @@ EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCTSTR lpszFileName, _Out_wri
     else
     {
         relName.ContainingDirectory = NULL;
-        if(usWin32FileName.Buffer)
+        if (usWin32FileName.Buffer)
         {
             usNtFileName.Length = (USHORT)((ULONG_PTR)usWin32FileName.Buffer - (ULONG_PTR)usNtFileName.Buffer);
             usNtFileName.MaximumLength = usNtFileName.Length;
@@ -345,7 +345,7 @@ EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCTSTR lpszFileName, _Out_wri
     }
 
     uLen = usNtFileName.Length / sizeof(WCHAR);
-    if(L':' != usNtFileName.Buffer[uLen - 2] &&  L'\\' != usNtFileName.Buffer[uLen - 1])
+    if (L':' != usNtFileName.Buffer[uLen - 2] && L'\\' != usNtFileName.Buffer[uLen - 1])
     {
         usNtFileName.Length -= sizeof(WCHAR);
         bStrippedSlash = TRUE;
@@ -362,7 +362,7 @@ EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCTSTR lpszFileName, _Out_wri
         FILE_DIRECTORY_FILE | FILE_OPEN_FOR_BACKUP_INTENT | FILE_SYNCHRONOUS_IO_NONALERT
     );
 
-    if(bStrippedSlash && (ntStatus == STATUS_NOT_A_DIRECTORY || ntStatus == STATUS_INVALID_PARAMETER))
+    if (bStrippedSlash && (ntStatus == STATUS_NOT_A_DIRECTORY || ntStatus == STATUS_INVALID_PARAMETER))
     {
         /* put back slash for a single NtOpenFile() call */
         usNtFileName.Length += sizeof(WCHAR);
@@ -377,23 +377,23 @@ EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCTSTR lpszFileName, _Out_wri
         usNtFileName.Length -= sizeof(WCHAR);
     }
 
-    if(!NT_SUCCESS(ntStatus))
+    if (!NT_SUCCESS(ntStatus))
     {
         HeapFree(GetProcessHeap(), 0, pBufToFree);
         SetLastErrorFromNtError(ntStatus);
         return INVALID_HANDLE_VALUE;
     }
 
-    if(usWin32FileName.Buffer)
+    if (usWin32FileName.Buffer)
     {
-        if(0 == memcmp(usWin32FileName.Buffer, szWildcardAll, sizeof(szWildcardAll) - sizeof(szWildcardAll[0])))
+        if (0 == memcmp(usWin32FileName.Buffer, szWildcardAll, sizeof(szWildcardAll) - sizeof(szWildcardAll[0])))
         {
             usWin32FileName.Length = sizeof(WCHAR); /* compress to single asterisk */
         }
     }
 
     pFindHandle = initFindHandle_(hDirectory, s_uInitialBufSize);
-    if(!pFindHandle)
+    if (!pFindHandle)
     {
         HeapFree(GetProcessHeap(), 0, pBufToFree);
         (void)pfnNtClose(hDirectory);
@@ -404,7 +404,7 @@ EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCTSTR lpszFileName, _Out_wri
     ntStatus = WrapNtQueryDirectoryFile_(pFindHandle, &usWin32FileName);
     HeapFree(GetProcessHeap(), 0, pBufToFree);
 
-    if(!NT_SUCCESS(ntStatus))
+    if (!NT_SUCCESS(ntStatus))
     {
         (void)freeFindHandle_(pFindHandle);
         SetLastErrorFromNtError(ntStatus);
@@ -422,16 +422,16 @@ EXTERN_C BOOL WINAPI NativeFindNextFile(_In_ HANDLE hFindFile, _Out_writes_bytes
 {
     FINDFILE_HANDLE* pFindHandle = (FINDFILE_HANDLE*)hFindFile;
     BOOL bRetVal = FALSE;
-    if(INVALID_HANDLE_VALUE == hFindFile || !hFindFile)
+    if (INVALID_HANDLE_VALUE == hFindFile || !hFindFile)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return bRetVal;
     }
-    if(TryEnterCriticalSection(&pFindHandle->csFindHandle))
-    __try
+    if (TryEnterCriticalSection(&pFindHandle->csFindHandle))
+        __try
     {
         /* simply copy an entry from our buffer, if there is more data */
-        if(pFindHandle->pNextEntry)
+        if (pFindHandle->pNextEntry)
         {
             OUR_NATIVE_INFO* currEntry = (OUR_NATIVE_INFO*)pFindHandle->pNextEntry;
             populateFindFileData_(lpFindFileData, currEntry, pFindHandle);
@@ -454,10 +454,10 @@ EXTERN_C BOOL WINAPI NativeFindNextFile(_In_ HANDLE hFindFile, _Out_writes_bytes
                 NULL,
                 FALSE
             );
-            while(STATUS_BUFFER_OVERFLOW == ntStatus)
+            while (STATUS_BUFFER_OVERFLOW == ntStatus)
             {
                 /* resize the buffer */
-                if(!doubleFindHandleBufferSize_(pFindHandle))
+                if (!doubleFindHandleBufferSize_(pFindHandle))
                 {
                     ntStatus = STATUS_NO_MEMORY;
                     break;
@@ -478,7 +478,7 @@ EXTERN_C BOOL WINAPI NativeFindNextFile(_In_ HANDLE hFindFile, _Out_writes_bytes
                 );
             }
             pFindHandle->ntStatus = ntStatus;
-            if(NT_SUCCESS(ntStatus))
+            if (NT_SUCCESS(ntStatus))
             {
                 populateFindFileData_(lpFindFileData, (OUR_NATIVE_INFO*)pFindHandle->pBuffer, pFindHandle);
                 bRetVal = TRUE;
@@ -499,7 +499,7 @@ EXTERN_C BOOL WINAPI NativeFindNextFile(_In_ HANDLE hFindFile, _Out_writes_bytes
 _Success_(return != 0)
 EXTERN_C BOOL NativeFindClose(_In_opt_ HANDLE hFindFile)
 {
-    if(INVALID_HANDLE_VALUE == hFindFile || !hFindFile)
+    if (INVALID_HANDLE_VALUE == hFindFile || !hFindFile)
     {
         SetLastError(ERROR_INVALID_HANDLE);
         return FALSE;
@@ -508,13 +508,13 @@ EXTERN_C BOOL NativeFindClose(_In_opt_ HANDLE hFindFile)
     __try
     {
         FINDFILE_HANDLE* pFindHandle = (FINDFILE_HANDLE*)hFindFile;
-        if(TryEnterCriticalSection(&pFindHandle->csFindHandle))
+        if (TryEnterCriticalSection(&pFindHandle->csFindHandle))
         {
             LeaveCriticalSection(&pFindHandle->csFindHandle);
             return freeFindHandle_(pFindHandle);
         }
     }
-    __except(EXCEPTION_EXECUTE_HANDLER)
+    __except (EXCEPTION_EXECUTE_HANDLER)
     {
         SetLastErrorFromNtError(GetExceptionCode());
         return FALSE;
@@ -525,7 +525,7 @@ EXTERN_C BOOL NativeFindClose(_In_opt_ HANDLE hFindFile)
 EXTERN_C NTSTATUS WINAPI NativeFindLastStatus(_In_ HANDLE hFindFile)
 {
     FINDFILE_HANDLE* pFindHandle = (FINDFILE_HANDLE*)hFindFile;
-    if(pFindHandle)
+    if (pFindHandle)
     {
         return pFindHandle->ntStatus;
     }
