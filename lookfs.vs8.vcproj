@@ -101,6 +101,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="call &quot;$(ProjectDir)\testgen.cmd&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -187,6 +188,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="call &quot;$(ProjectDir)\testgen.cmd&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -274,6 +276,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="call &quot;$(ProjectDir)\testgen.cmd&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -362,6 +365,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="call &quot;$(ProjectDir)\testgen.cmd&quot;"
 			/>
 		</Configuration>
 	</Configurations>
@@ -515,6 +519,10 @@
 			</File>
 			<File
 				RelativePath="setvcvars.cmd"
+				>
+			</File>
+			<File
+				RelativePath="testgen.cmd"
 				>
 			</File>
 		</Filter>

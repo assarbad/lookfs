@@ -250,7 +250,7 @@ solution (tgtname .. iif(release, "_release", ""))
             "*.h",
             "*.hpp",
             "*.manifest",
-            "*.cmd", "*.txt", "*.md", "*.rst", "premake4.lua",
+            "*.cmd", "*.md", "*.rst", "premake4.lua",
         }
 
         vpaths
@@ -265,6 +265,7 @@ solution (tgtname .. iif(release, "_release", ""))
 
         configuration {"*"}
             prebuildcommands{"call \"$(ProjectDir)\\hgid.cmd\"",}
+            postbuildcommands{"call \"$(ProjectDir)\\testgen.cmd\"",}
 
         configuration {"x64"}
             prebuildcommands{"lib.exe /nologo /nodefaultlib \"/def:ntdll-stubs\\ntdll-delayed.txt\" \"/out:$(IntDir)\\ntdll-delayed.lib\" /machine:x64",}

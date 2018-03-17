@@ -33,6 +33,9 @@
     <None Include="setvcvars.cmd">
       <Filter>Special Files</Filter>
     </None>
+    <None Include="testgen.cmd">
+      <Filter>Special Files</Filter>
+    </None>
     <None Include="README.rst">
       <Filter>Special Files</Filter>
     </None>
