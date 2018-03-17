@@ -239,6 +239,7 @@
     <ClInclude Include="FileAttributes.h" />
     <ClInclude Include="ntfindfile.h" />
     <ClInclude Include="ntnative.h" />
+    <ClInclude Include="priv.h" />
     <ClInclude Include="ReparseTags.h" />
     <ClInclude Include="AlternateDataStreams.hpp" />
     <ClInclude Include="lookfs.hpp" />
@@ -252,6 +253,9 @@
     <ClCompile Include="lookfs.cpp">
     </ClCompile>
     <ClCompile Include="ntfindfile.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="priv.c">
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
   </ItemGroup>

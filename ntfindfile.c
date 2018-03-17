@@ -6,9 +6,6 @@
 ///                    enumerate files and directories.
 ///
 ///////////////////////////////////////////////////////////////////////////////
-#include <tchar.h>
-#include <stdio.h>
-#include <Windows.h>
 #ifdef NTFINDFILE_DYNAMIC
 #   ifdef DYNAMIC_NTNATIVE
 #       error DYNAMIC_NTNATIVE should _NOT_ be defined if NTFINDFILE_DYNAMIC is defined

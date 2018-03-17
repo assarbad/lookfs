@@ -7,10 +7,13 @@
 ///
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef __NTFINDFILE_H_VER__
-#define __NTFINDFILE_H_VER__ 2018031322
+#define __NTFINDFILE_H_VER__ 2018031723
 #if (defined(_MSC_VER) && (_MSC_VER >= 1020)) || defined(__MCPP)
 #pragma once
 #endif /* Check for #pragma support */
+
+#include <Windows.h>
+#include <tchar.h>
 
 // Fake the SAL1 annotations where they don't exist.
 #if !defined(__in_bcount) && !defined(_In_reads_bytes_)

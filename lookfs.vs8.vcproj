@@ -416,6 +416,10 @@
 				RelativePath="ntnative.h"
 				>
 			</File>
+			<File
+				RelativePath="priv.h"
+				>
+			</File>
 			<Filter
 				Name="simpleopt"
 				Filter=""
@@ -453,6 +457,42 @@
 			</File>
 			<File
 				RelativePath="ntfindfile.c"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="1"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="priv.c"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"

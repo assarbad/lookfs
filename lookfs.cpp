@@ -26,6 +26,8 @@
 #include <cstdio>
 #include <tchar.h>
 #include <cstring>
+#include <fcntl.h>
+#include <io.h>
 #define _ATL_USE_CSTRING
 #define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS
 #include <atlbase.h>
@@ -34,6 +36,7 @@
 #include "thirdparty/simpleopt/SimpleOpt.h"
 #include "ntnative.h"
 #include "ntfindfile.h"
+#include "priv.h"
 #include "AlternateDataStreams.hpp"
 #include "ReparsePoint.hpp"
 #include "VersionInfo.hpp"
@@ -52,9 +55,97 @@ namespace
 
     static settings_t g_settings = { true, false, false, true, false, false };
 
+    class CFileStreamWrapper
+    {
+        FILE* m_file;
+    public:
+        CFileStreamWrapper(TCHAR const* lpszPath = NULL)
+            : m_file(NULL)
+        {
+            (void)open(lpszPath);
+        }
+
+        virtual ~CFileStreamWrapper()
+        {
+            close_();
+        }
+
+        bool open(TCHAR const* lpszPath)
+        {
+            close_();
+            if (lpszPath)
+            {
+                errno_t err = _tfopen_s(&m_file, lpszPath, _T("w"));
+#ifdef _DEBUG
+                if (err)
+                {
+                    TCHAR buf[MAX_PATH] = { 0 };
+                    errno_t converr = _wcserror_s(buf, _countof(buf), err);
+                    if (converr)
+                    {
+                        _TRACE(_T("errno = %d <failed to retrieve error string>\n"), err);
+                    }
+                    else
+                    {
+                        _TRACE(_T("errno = %d, %s\n"), err, buf);
+                    }
+                    return false;
+                }
+#endif // _DEBUG
+#if defined(UNICODE) || defined(_UNICODE)
+                // We want to output as UTF-8
+                if (m_file)
+                {
+                    // Insert a byte-order mark if this is the start of the file
+                    if (0 == ftell(m_file))
+                    {
+                        (void)_setmode(_fileno(m_file), _O_BINARY);
+                        fwrite("\xEF\xBB\xBF", sizeof(char), 3, m_file);
+                        fflush(m_file);
+                    }
+                    (void)_setmode(_fileno(m_file), _O_U8TEXT);
+                }
+#endif
+                return true;
+            }
+            return false;
+        }
+
+        operator FILE*() const
+        {
+            return m_file;
+        }
+
+        operator bool() const
+        {
+            return (m_file != NULL);
+        }
+
+        bool operator!() const
+        {
+            return (m_file != NULL);
+        }
+
+    private:
+        // Hide these
+        CFileStreamWrapper(CFileStreamWrapper&);
+        CFileStreamWrapper& operator=(CFileStreamWrapper&);
+
+        void close_()
+        {
+            if (m_file)
+            {
+                fclose(m_file);
+                m_file = NULL;
+            }
+        }
+    };
+
+    CFileStreamWrapper g_outfile;
+
     static const TCHAR *getSimpleOptLastErrorText(int a_nError)
     {
-        switch(a_nError)
+        switch (a_nError)
         {
         case SO_SUCCESS:            return _T("Success");
         case SO_OPT_INVALID:        return _T("Unrecognized option");
@@ -78,7 +169,7 @@ namespace
     static DWORD wrapFormatMessage_(HMODULE lpSource, DWORD dwMessageId, TCHAR** lpBuffer, va_list* Arguments)
     {
         DWORD dwFlags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM;
-        if(lpSource)
+        if (lpSource)
         {
             dwFlags |= FORMAT_MESSAGE_FROM_HMODULE;
         }
@@ -90,12 +181,12 @@ namespace
         TCHAR* retBuf = 0;
         va_list ptr;
         va_start(ptr, MessageID);
-        if(wrapFormatMessage_(
+        if (wrapFormatMessage_(
             hMod,
             MessageID,
             (TCHAR**)(&retBuf),
             &ptr
-            ) && (0 != retBuf))
+        ) && (0 != retBuf))
         {
             CString s(retBuf);
             LocalFree((HLOCAL)(retBuf));
@@ -109,9 +200,9 @@ namespace
 
     static LPCTSTR getReparseType(const CReparsePoint& rp)
     {
-        if(!rp.isReparsePoint())
+        if (!rp.isReparsePoint())
             return _T("");
-        switch(rp.ReparseTag())
+        switch (rp.ReparseTag())
         {
         case IO_REPARSE_TAG_MOUNT_POINT:
             return _T("mount point");
@@ -179,18 +270,18 @@ namespace
     static int showReparsePoint(WCHAR const* path, settings_t const& sett)
     {
         CReparsePoint rp(path);
-        if(ERROR_SUCCESS != rp.LastError())
+        if (ERROR_SUCCESS != rp.LastError())
         {
-            if(!sett.noerror)
+            if (!sett.noerror)
             {
                 _ftprintf(stderr, _T("ERROR: Win32 error code %d. Probably file (2) or path (3) not found or access issue (5)?!\n"), rp.LastError());
             }
             return 3;
         }
-        if(rp.isReparsePoint())
+        if (rp.isReparsePoint())
         {
             _tprintf(_T("%ws\n"), rp.Path());
-            if(sett.verbose)
+            if (sett.verbose)
             {
                 _tprintf(_T("\tA %sMicrosoft %s (virt == %d)\n"),
                     ((rp.isMicrosoftTag()) ? _T("") : _T("non-")),
@@ -198,17 +289,17 @@ namespace
                     rp.isVirtual()
                 );
 #ifdef RP_QUERY_FILE_ID
-                if(-1 != rp.FileIndex())
+                if (-1 != rp.FileIndex())
                 {
                     _tprintf(_T("\tFile Index: %I64u (%08X%08X)\n"), rp.FileIndex(), rp.FileIndexHigh(), rp.FileIndexLow());
                 }
 #endif // RP_QUERY_FILE_ID
             }
-            if(rp.isNameSurrogate())
+            if (rp.isNameSurrogate())
             {
-                if(!sett.verbose)
+                if (!sett.verbose)
                 {
-                    if(!sett.printname)
+                    if (!sett.printname)
                         _tprintf(_T("\t-> %ws\n"), rp.SubstName());
                     else
                         _tprintf(_T("\t-> %ws\n"), rp.PrintName());
@@ -220,37 +311,37 @@ namespace
                     _tprintf(_T("\tSubst name: %ws (w32)\n"), rp.CanonicalSubstName());
                 }
             }
-            if(!rp.isMicrosoftTag() || sett.verbose)
+            if (!rp.isMicrosoftTag() || sett.verbose)
             {
-                if(sett.verbose)
+                if (sett.verbose)
                 {
                     _tprintf(_T("\tTag       : %08X\n"), rp.ReparseTag());
                 }
                 _tprintf(_T("\tGUID      : {%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}\n"),
-                         rp.ReparseGuid().Data1,
-                         rp.ReparseGuid().Data2,
-                         rp.ReparseGuid().Data3,
-                         rp.ReparseGuid().Data4[0],
-                         rp.ReparseGuid().Data4[1],
-                         rp.ReparseGuid().Data4[2],
-                         rp.ReparseGuid().Data4[3],
-                         rp.ReparseGuid().Data4[4],
-                         rp.ReparseGuid().Data4[5],
-                         rp.ReparseGuid().Data4[6],
-                         rp.ReparseGuid().Data4[7]
+                    rp.ReparseGuid().Data1,
+                    rp.ReparseGuid().Data2,
+                    rp.ReparseGuid().Data3,
+                    rp.ReparseGuid().Data4[0],
+                    rp.ReparseGuid().Data4[1],
+                    rp.ReparseGuid().Data4[2],
+                    rp.ReparseGuid().Data4[3],
+                    rp.ReparseGuid().Data4[4],
+                    rp.ReparseGuid().Data4[5],
+                    rp.ReparseGuid().Data4[6],
+                    rp.ReparseGuid().Data4[7]
                 );
             }
         }
         else
         {
-            if(!sett.noerror) // show no errors if asked not to
+            if (!sett.noerror) // show no errors if asked not to
             {
                 _ftprintf(stderr, _T("ERROR: '%ws' is not a reparse point\n"), rp.Path());
             }
-            if(sett.verbose)
+            if (sett.verbose)
             {
 #ifdef RP_QUERY_FILE_ID
-                if(-1 != rp.FileIndex())
+                if (-1 != rp.FileIndex())
                 {
                     _ftprintf(stderr, _T("\tFile Index: %I64u (%08X%08X)\n"), rp.FileIndex(), rp.FileIndexHigh(), rp.FileIndexLow());
                 }
@@ -284,23 +375,23 @@ namespace
             , m_lError(ERROR_SUCCESS)
         {
             memset(&m_fd, 0, sizeof(m_fd));
-            if(!szPath || m_sOriginalPath.IsEmpty())
+            if (!szPath || m_sOriginalPath.IsEmpty())
             {
                 _TRACE(_T("Invalid szPath == %s"), szPath);
                 return;
             }
-            if(adjustPaths_())
+            if (adjustPaths_())
             {
                 CString sSearchPath(m_sDirectory.GetString());
                 sSearchPath += m_sSearchMask;
                 m_hFind = NativeFindFirstFile(sSearchPath, &m_fd, bCaseSensitive);
-                if(INVALID_HANDLE_VALUE != m_hFind)
+                if (INVALID_HANDLE_VALUE != m_hFind)
                 {
                     //_TRACE(_T("NativeFindFirstFile(\"%s\", %p, %s) -> %p"), sSearchPath.GetString(), &m_fd, bCaseSensitive ? _T("TRUE") : _T("FALSE"), m_hFind);
                     // Keep looking for the next item until we have skipped the . and .. entries
-                    while(isDotDir_(m_fd.cFileName))
+                    while (isDotDir_(m_fd.cFileName))
                     {
-                        if(!next())
+                        if (!next())
                         {
                             break;
                         }
@@ -317,7 +408,7 @@ namespace
 
         ~CPathFinder()
         {
-            if(m_hFind != NULL && m_hFind != INVALID_HANDLE_VALUE)
+            if (m_hFind != NULL && m_hFind != INVALID_HANDLE_VALUE)
             {
                 //_TRACE(_T("NativeFindClose(%p)"), m_hFind);
                 NativeFindClose(m_hFind);
@@ -326,25 +417,25 @@ namespace
 
         inline bool next()
         {
-            if(!m_bValid)
+            if (!m_bValid)
             {
                 m_lError = ERROR_INVALID_PARAMETER;
                 return false;
             }
             BOOL bRetVal = NativeFindNextFile(m_hFind, &m_fd);
-            if(bRetVal)
+            if (bRetVal)
             {
                 // Keep looking for the next item until we have skipped the . and .. entries
-                while(isDotDir_(m_fd.cFileName))
+                while (isDotDir_(m_fd.cFileName))
                 {
                     bRetVal = NativeFindNextFile(m_hFind, &m_fd);
-                    if(!bRetVal)
+                    if (!bRetVal)
                     {
                         break;
                     }
                 }
             }
-            if(!bRetVal)
+            if (!bRetVal)
             {
                 memset(&m_fd, 0, sizeof(m_fd));
                 m_lError = GetLastError();
@@ -365,7 +456,7 @@ namespace
         inline CString getFullPathName() const
         {
             CString p;
-            if(m_bValid)
+            if (m_bValid)
             {
                 p = m_sDirectory;
                 p += m_fd.cFileName;
@@ -399,13 +490,13 @@ namespace
     private:
         static BOOL isDotDir_(LPCTSTR path)
         {
-            if(!path)
+            if (!path)
                 return FALSE;
-            if(path[0] == _T('.'))
+            if (path[0] == _T('.'))
             {
-                if(!path[1]) // directory entry '.'
+                if (!path[1]) // directory entry '.'
                     return TRUE;
-                if(path[1] == _T('.') && !path[2]) // directory entry '..'
+                if (path[1] == _T('.') && !path[2]) // directory entry '..'
                     return TRUE;
             }
             return FALSE;
@@ -414,9 +505,10 @@ namespace
         BOOL adjustPaths_()
         {
             // Replace forward slashes by backward slashes
-            for(int i = 0; i < m_sNormalizedPath.GetLength(); i++)
+            m_sNormalizedPath.TrimRight(_T("\\/"));
+            for (int i = 0; i < m_sNormalizedPath.GetLength(); i++)
             {
-                if(m_sNormalizedPath.GetAt(i) == _T('/'))
+                if (m_sNormalizedPath.GetAt(i) == _T('/'))
                 {
                     m_sNormalizedPath.SetAt(i, _T('\\'));
                 }
@@ -424,11 +516,11 @@ namespace
             DWORD dwAttr = ::GetFileAttributes(m_sNormalizedPath);
             // For all we know it's a file or a path with wildcard characters at
             // this point. But it could also be a filename instead of a wildcard.
-            if((INVALID_FILE_ATTRIBUTES == dwAttr) || !(dwAttr & FILE_ATTRIBUTE_DIRECTORY))
+            if ((INVALID_FILE_ATTRIBUTES == dwAttr) || !(dwAttr & FILE_ATTRIBUTE_DIRECTORY))
             {
                 int iLastSlash = m_sNormalizedPath.ReverseFind(_T('\\'));
                 // If there was no slash before the wildcard/filename, something else is fishy ... bail out
-                if(-1 == iLastSlash)
+                if (-1 == iLastSlash)
                 {
                     _TRACE(_T("[ERROR:%d] Could not find last slash in \"%s\" (%s)."), GetLastError(), m_sNormalizedPath.GetString(), formatMessage(NULL, GetLastError()).GetString());
                     m_lError = GetLastError();
@@ -440,10 +532,10 @@ namespace
                 lpszString[iLastSlash + 1] = 0; // zero-terminate
                 m_sDirectory = lpszString;
             }
-            if((INVALID_FILE_ATTRIBUTES != dwAttr) && (FILE_ATTRIBUTE_DIRECTORY & dwAttr))
+            if ((INVALID_FILE_ATTRIBUTES != dwAttr) && (FILE_ATTRIBUTE_DIRECTORY & dwAttr))
             {
                 m_sDirectory = m_sNormalizedPath;
-                if(m_sDirectory.GetAt(m_sDirectory.GetLength() - 1) != _T('\\'))
+                if (m_sDirectory.GetAt(m_sDirectory.GetLength() - 1) != _T('\\'))
                 {
                     m_sDirectory.AppendChar(_T('\\'));
                 }
@@ -497,7 +589,7 @@ namespace
 
     int traversePath(WCHAR const* szPath, settings_t const& sett)
     {
-        if(!szPath)
+        if (!szPath)
         {
             return 1; // error
         }
@@ -505,44 +597,65 @@ namespace
         int iRet = 0;
         do
         {
-            if(!pathFinder)
+            /*
+                        static DWORD const REPARSE_DIR = (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT);
+            */
+            if (!pathFinder)
             {
-                if(!sett.noerror)
+                /*
+                                // Smoke tests
+                                CString sCheckedPath = pathFinder.getNormalizedPathName();
+                                sCheckedPath.TrimRight(_T("\\"));
+                                DWORD dwAttr = ::GetFileAttributes(sCheckedPath);
+                                if(INVALID_FILE_ATTRIBUTES == dwAttr)
+                                {
+                                    if(!sett.noerror)
+                                    {
+                                        _ftprintf(stderr, _T("[ERROR:%d] Invalid file attributes for \"%s\" (%s).\n"), GetLastError(), sCheckedPath.GetString(), formatMessage(NULL, GetLastError()).GetString());
+                                    }
+                                    return 1;
+                                }
+                                if(REPARSE_DIR == (REPARSE_DIR & dwAttr))
+                                {
+                                    return showReparsePoint(szPath, sett);
+                                }
+                */
+                if (!sett.noerror)
                 {
                     _ftprintf(stderr, _T("[ERROR:%d] Failed to read contents of \"%s\" (%s).\n"), pathFinder.LastError(), pathFinder.getFullPathName().GetString(), formatMessage(NULL, pathFinder.LastError()).GetString());
                 }
                 return 1;
             }
-            NT_FIND_DATA const& fd = pathFinder.getFindData();
             CString path(pathFinder.getFullPathName());
-            if(sett.showall)
+            if (sett.showall)
             {
                 _tprintf(_T("%s\n"), path.GetString());
             }
-            if(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+            NT_FIND_DATA const& fd = pathFinder.getFindData();
+            if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
             {
                 // Don't follow reparse points in any case
-                if(!(fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT))
+                if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT))
                 {
-                    path.AppendFormat(_T("\\%s"), pathFinder.getSearchMask());
+                    //path.AppendFormat(_T("\\%s"), pathFinder.getSearchMask());
                     // Recurse into subdirectory
                     int err = traversePath(path, sett);
-                    if(err)
+                    if (err)
                     {
                         iRet = err;
                     }
                 }
             }
             // Not only directories can be reparse points
-            if(fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+            if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
             {
                 int err = showReparsePoint(path, sett);
-                if(err)
+                if (err)
                 {
                     iRet = err;
                 }
             }
-        } while(pathFinder.next());
+        } while (pathFinder.next());
         return iRet;
     }
 
@@ -556,6 +669,7 @@ namespace
         OPT_NOCASE,
         OPT_SHOWALL,
         OPT_PRINTNAME,
+        OPT_OUTPUTFILE,
         OPT_STOP,
     };
 
@@ -566,6 +680,7 @@ namespace
         { OPT_HELP,     _T("--help"),       SO_NONE },
         { OPT_NOLOGO,   _T("-L"),           SO_NONE },
         { OPT_NOLOGO,   _T("--nologo"),     SO_NONE },
+        { OPT_NOLOGO,   _T("--nobanner"),   SO_NONE },
         { OPT_NOERR,    _T("-E"),           SO_NONE },
         { OPT_NOERR,    _T("--noerror"),    SO_NONE },
         { OPT_VERBOSE,  _T("-v"),           SO_NONE },
@@ -581,11 +696,47 @@ namespace
         { OPT_PRINTNAME,_T("-p"),           SO_NONE },
         { OPT_PRINTNAME,_T("--printname"),  SO_NONE },
         { OPT_PRINTNAME,_T("--print-name"), SO_NONE },
+        { OPT_OUTPUTFILE,_T("-o"),         SO_REQ_SEP },
+        { OPT_OUTPUTFILE,_T("--output"),    SO_REQ_SEP },
         { OPT_STOP,     _T("--"),           SO_NONE },
         SO_END_OF_OPTIONS,
     };
 
 }
+
+class CSnapEnableExistingPrivilege
+{
+    BOOL m_bEnabled;
+    CString m_sPrivilege;
+public:
+    CSnapEnableExistingPrivilege(LPCTSTR lpszPrivilege)
+        : m_bEnabled(FALSE)
+        , m_sPrivilege(lpszPrivilege)
+    {
+        if (HasContextTokenPrivilege(lpszPrivilege, NULL))
+        {
+            m_bEnabled = SetContextPrivilege(lpszPrivilege, TRUE);
+            if (!m_bEnabled)
+            {
+                if (!g_settings.noerror)
+                {
+                    _tprintf(_T("Could not enable %s\n"), lpszPrivilege);
+                }
+            }
+        }
+    }
+
+    virtual ~CSnapEnableExistingPrivilege()
+    {
+        if (m_bEnabled)
+        {
+            (void)SetContextPrivilege(m_sPrivilege, FALSE);
+        }
+    }
+private:
+    CSnapEnableExistingPrivilege(CSnapEnableExistingPrivilege&);
+    CSnapEnableExistingPrivilege& operator=(CSnapEnableExistingPrivilege&);
+};
 
 int __cdecl _tmain(int argc, _TCHAR *argv[])
 {
@@ -593,11 +744,11 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
     _CrtSetDbgFlag(_CRTDBG_CHECK_ALWAYS_DF | _CRTDBG_ALLOC_MEM_DF);
 #endif // _DEBUG
     CVersionInfo verinfo(getInstanceHandle());
-    CSimpleOpt args(argc, argv, g_Options, SO_O_EXACT);
+    CSimpleOpt args(argc, argv, g_Options, SO_O_EXACT | SO_O_CLUMP | SO_O_SHORTARG | SO_O_ICASE_LONG);
 
-    while(args.Next())
+    while (args.Next())
     {
-        if(args.LastError() != SO_SUCCESS)
+        if (args.LastError() != SO_SUCCESS)
         {
             _ftprintf(
                 stderr
@@ -606,7 +757,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
             );
             continue;
         }
-        switch(args.OptionId())
+        switch (args.OptionId())
         {
         case OPT_HELP:
             showHelp(verinfo);
@@ -632,15 +783,22 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
         case OPT_PRINTNAME:
             g_settings.printname = true;
             break;
+        case OPT_OUTPUTFILE:
+            g_outfile.open(args.OptionArg());
+            if (!g_outfile)
+            {
+                _tprintf(_T("Failed to open output file.\n"));
+            }
+            break;
         case OPT_STOP:
             args.Stop();
             break;
         }
     }
 
-    if(g_settings.logo)
+    if (g_settings.logo)
     {
-        if(!args.FileCount())
+        if (!args.FileCount())
         {
             showHelp(verinfo);
             return 0;
@@ -651,16 +809,19 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
         }
     }
 
+    // allows us to traverse into places that are otherwise off limits
+    CSnapEnableExistingPrivilege privBackup(SE_BACKUP_NAME);
+
     int retval = 0;
 
-    for(int n = 0; n < args.FileCount(); n++)
+    for (int n = 0; n < args.FileCount(); n++)
     {
 #ifdef _DEBUG
         _CrtCheckMemory();
 #endif // _DEBUG
-        
+
         int err = traversePath(args.File(n), g_settings);
-        if(err > retval)
+        if (err > retval)
         {
             retval = err;
         }
