@@ -27,3 +27,4 @@ buildlog.html
 *.7z.asc
 *.vlconfig
 .vs/**
+fstest/**
