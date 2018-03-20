@@ -704,40 +704,6 @@ namespace
 
 }
 
-class CSnapEnableExistingPrivilege
-{
-    BOOL m_bEnabled;
-    CString m_sPrivilege;
-public:
-    CSnapEnableExistingPrivilege(LPCTSTR lpszPrivilege)
-        : m_bEnabled(FALSE)
-        , m_sPrivilege(lpszPrivilege)
-    {
-        if (HasContextTokenPrivilege(lpszPrivilege, NULL))
-        {
-            m_bEnabled = SetContextPrivilege(lpszPrivilege, TRUE);
-            if (!m_bEnabled)
-            {
-                if (!g_settings.noerror)
-                {
-                    _tprintf(_T("Could not enable %s\n"), lpszPrivilege);
-                }
-            }
-        }
-    }
-
-    virtual ~CSnapEnableExistingPrivilege()
-    {
-        if (m_bEnabled)
-        {
-            (void)SetContextPrivilege(m_sPrivilege, FALSE);
-        }
-    }
-private:
-    CSnapEnableExistingPrivilege(CSnapEnableExistingPrivilege&);
-    CSnapEnableExistingPrivilege& operator=(CSnapEnableExistingPrivilege&);
-};
-
 int __cdecl _tmain(int argc, _TCHAR *argv[])
 {
 #ifdef _DEBUG
@@ -810,7 +776,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
     }
 
     // allows us to traverse into places that are otherwise off limits
-    CSnapEnableExistingPrivilege privBackup(SE_BACKUP_NAME);
+    CSnapEnableAssignedPrivilege privBackup(SE_BACKUP_NAME);
 
     int retval = 0;
 

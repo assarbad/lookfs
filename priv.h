@@ -27,4 +27,42 @@ EXTERN_C BOOL IsContextTokenPrivilegeEnabled(LPCTSTR lpszPrivilege);
 EXTERN_C BOOL IsProcessTokenPrivilegeEnabled(LPCTSTR lpszPrivilege);
 EXTERN_C BOOL IsThreadTokenPrivilegeEnabled(LPCTSTR lpszPrivilege);
 
+#ifdef __cplusplus
+class CSnapEnableAssignedPrivilege
+{
+    BOOL m_bEnabled, m_bNoErrors;
+    LPTSTR m_lpszPrivilege;
+public:
+    CSnapEnableAssignedPrivilege(LPCTSTR lpszPrivilege, BOOL bNoErrors = TRUE)
+        : m_bEnabled(FALSE)
+        , m_bNoErrors(bNoErrors)
+        , m_lpszPrivilege((lpszPrivilege) ? _tcsdup(lpszPrivilege) : NULL)
+    {
+        if (HasContextTokenPrivilege(m_lpszPrivilege, NULL))
+        {
+            m_bEnabled = SetContextPrivilege(m_lpszPrivilege, TRUE);
+            if (!m_bEnabled)
+            {
+                if (!m_bNoErrors)
+                {
+                    _tprintf(_T("Could not enable %s\n"), lpszPrivilege);
+                }
+            }
+        }
+    }
+
+    virtual ~CSnapEnableAssignedPrivilege()
+    {
+        if (m_bEnabled)
+        {
+            (void)SetContextPrivilege(m_lpszPrivilege, FALSE);
+        }
+        free(m_lpszPrivilege);
+    }
+private:
+    CSnapEnableAssignedPrivilege(CSnapEnableAssignedPrivilege&);
+    CSnapEnableAssignedPrivilege& operator=(CSnapEnableAssignedPrivilege&);
+};
+#endif
+
 #endif /* __PRIV_H_VER__ */
