@@ -20,6 +20,7 @@ __declspec(thread) static NtOpenFile_t pfnNtOpenFile = NULL;
 __declspec(thread) static NtClose_t pfnNtClose = NULL;
 __declspec(thread) static NtQueryDirectoryFile_t pfnNtQueryDirectoryFile = NULL;
 __declspec(thread) static RtlDosPathNameToNtPathName_U_t pfnRtlDosPathNameToNtPathName_U = NULL;
+__declspec(thread) static RtlFreeUnicodeString_t pfnRtlFreeUnicodeString = NULL;
 __declspec(thread) static RtlInitUnicodeString_t pfnRtlInitUnicodeString = NULL;
 __declspec(thread) static RtlNtStatusToDosError_t pfnRtlNtStatusToDosError = NULL;
 #else
@@ -27,6 +28,7 @@ __declspec(thread) static RtlNtStatusToDosError_t pfnRtlNtStatusToDosError = NUL
 #define pfnNtClose NtClose
 #define pfnNtQueryDirectoryFile NtQueryDirectoryFile
 #define pfnRtlDosPathNameToNtPathName_U RtlDosPathNameToNtPathName_U
+#define pfnRtlFreeUnicodeString RtlFreeUnicodeString
 #define pfnRtlInitUnicodeString RtlInitUnicodeString
 #define pfnRtlNtStatusToDosError RtlNtStatusToDosError
 #endif
@@ -91,13 +93,14 @@ EXTERN_C BOOLEAN NativeFindInit(_In_ ULONG cbInitialBuffer)
         NTFIND_DEFFUNC(NtClose);
         NTFIND_DEFFUNC(NtQueryDirectoryFile);
         NTFIND_DEFFUNC(RtlDosPathNameToNtPathName_U);
+        NTFIND_DEFFUNC(RtlFreeUnicodeString);
         NTFIND_DEFFUNC(RtlInitUnicodeString);
         NTFIND_DEFFUNC(RtlNtStatusToDosError);
 #undef NTFIND_DEFFUNC
         if (
             !pfnNtOpenFile || !pfnNtClose || !pfnNtQueryDirectoryFile
-            || !pfnRtlDosPathNameToNtPathName_U || !pfnRtlInitUnicodeString
-            || !pfnRtlNtStatusToDosError
+            || !pfnRtlDosPathNameToNtPathName_U || !pfnRtlFreeUnicodeString
+            || !pfnRtlInitUnicodeString || !pfnRtlNtStatusToDosError
             )
         {
             SetLastError(ERROR_INVALID_FUNCTION);
@@ -294,7 +297,6 @@ EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCTSTR lpszFileName, _Out_wri
     UNICODE_STRING usWin32FileName, usNtFileName;
     NTSTATUS ntStatus;
     RTL_RELATIVE_NAME relName;
-    PVOID pBufToFree;
     FINDFILE_HANDLE* pFindHandle;
     USHORT uLen;
     OBJECT_ATTRIBUTES oa;
@@ -309,8 +311,6 @@ EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCTSTR lpszFileName, _Out_wri
         SetLastError(ERROR_PATH_NOT_FOUND);
         return INVALID_HANDLE_VALUE;
     }
-
-    pBufToFree = usNtFileName.Buffer;
 
     if (usWin32FileName.Buffer)
     {
@@ -376,7 +376,7 @@ EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCTSTR lpszFileName, _Out_wri
 
     if (!NT_SUCCESS(ntStatus))
     {
-        HeapFree(GetProcessHeap(), 0, pBufToFree);
+        RtlFreeUnicodeString(&usNtFileName);
         SetLastErrorFromNtError(ntStatus);
         return INVALID_HANDLE_VALUE;
     }
@@ -392,14 +392,14 @@ EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCTSTR lpszFileName, _Out_wri
     pFindHandle = initFindHandle_(hDirectory, s_uInitialBufSize);
     if (!pFindHandle)
     {
-        HeapFree(GetProcessHeap(), 0, pBufToFree);
+        RtlFreeUnicodeString(&usNtFileName);
         (void)pfnNtClose(hDirectory);
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
         return INVALID_HANDLE_VALUE;
     }
 
     ntStatus = WrapNtQueryDirectoryFile_(pFindHandle, &usWin32FileName);
-    HeapFree(GetProcessHeap(), 0, pBufToFree);
+    RtlFreeUnicodeString(&usNtFileName);
 
     if (!NT_SUCCESS(ntStatus))
     {
