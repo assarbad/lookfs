@@ -227,8 +227,8 @@ solution (tgtname .. iif(release, "_release", ""))
         objdir          (int_dir)
         libdirs         {"$(IntDir)"}
         links           {"ntdll-delayed", "version"}
-        resoptions      {"/nologo", "/l409"}
         linkoptions     {"/delay:nobind","/delayload:ntdll-delayed.dll","/delayload:version.dll"}
+        resoptions      {"/nologo", "/l409"}
         defines         {"RP_QUERY_FILE_ID", "_CONSOLE", "WIN32", "_WINDOWS", "STRICT"}
         if not _OPTIONS["msvcrt"] then
             flags       {"StaticRuntime"}

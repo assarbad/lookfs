@@ -6,7 +6,7 @@
 ///
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef __ALTERNATEDATASTREAMS_H_VER__
-#define __ALTERNATEDATASTREAMS_H_VER__ 2017100317
+#define __ALTERNATEDATASTREAMS_H_VER__ 2018030923
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
 #endif // Check for "#pragma once" support
@@ -131,7 +131,6 @@ private:
         NT_FILE_INFORMATION_CLASS FileInformationClass
         );
 
-    static const NTSTATUS STATUS_BUFFER_OVERFLOW = 0x80000005;
 #endif // __NTNATIVE_H_VER__
 
     static const DWORD dwAllocIncrement = 0x400;
@@ -300,33 +299,27 @@ private:
             if(psi->StreamNameLength)
             {
                 // Walk through our buffer with the stream data
-                for(DWORD i = 0; psi && (i < m_StreamCount);)
+                size_t i = 0;
+                do 
                 {
                     CWideString sName;
-                    if(sName.reAlloc((psi->StreamNameLength / sizeof(WCHAR)) + 1))
+                    size_t const sLen = (psi->StreamNameLength / sizeof(WCHAR));
+                    if(sName.reAlloc(sLen + 1))
                     {
                         memcpy(sName.getBuf(), psi->StreamName, psi->StreamNameLength);
-                        WCHAR* datatag = wcsstr(sName.getBuf(), DATA_TAG_NAME);
-                        if(0 != datatag)
-                        {
-                            *datatag = 0; // zero-terminate at the tag name
-                            // We don't store the default unnamed stream
-                            if(0 != wcscmp(sName.getBuf(), L":"))
-                            {
-                                // if this throws we'll let it fall through ;)
-                                m_StreamNames[i] = new CWideString(sName.getBuf());
-                                ++i;
-                            }
-                        }
-                    }
-                    curr += psi->NextEntryOffset;
-                    psi = reinterpret_cast<PFILE_STREAM_INFORMATION>((psi->NextEntryOffset) ? curr : 0);
-                }
+                        sName.getBuf()[sLen] = 0;
+                        m_StreamNames[i] = new CWideString(sName);
+                        ++i;
+                    } // TODO: else store error
+                    ULONG NextEntryOffset = psi->NextEntryOffset;
+                    curr += NextEntryOffset;
+                    psi = reinterpret_cast<PFILE_STREAM_INFORMATION>(NextEntryOffset ? curr : 0);
+                } while (psi);
             }
         }
         catch(...)
         {
-            emptyStreamNames_();
+            emptyStreamNames_(); // TODO: also make sure to somehow relay that info to the outside world
         }
     }
 
