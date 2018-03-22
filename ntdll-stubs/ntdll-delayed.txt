@@ -81,3 +81,11 @@ EXPORTS
     RtlDosPathNameToRelativeNtPathName_U
     RtlDetermineDosPathNameType_U
     RtlGetFullPathName_U
+    RtlUpcaseUnicodeString
+    RtlDowncaseUnicodeChar
+    RtlUpcaseUnicodeChar
+    RtlCompareUnicodeString
+    RtlEqualUnicodeString
+    RtlCopyUnicodeString
+    RtlAppendUnicodeStringToString
+    RtlAppendUnicodeToString
