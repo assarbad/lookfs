@@ -76,11 +76,11 @@ namespace
             if (lpszPath)
             {
                 errno_t err = _tfopen_s(&m_file, lpszPath, _T("w"));
-#ifdef _DEBUG
                 if (err)
                 {
+#ifdef _DEBUG
                     TCHAR buf[MAX_PATH] = { 0 };
-                    errno_t converr = _wcserror_s(buf, _countof(buf), err);
+                    errno_t converr = _tcserror_s(buf, _countof(buf), err);
                     if (converr)
                     {
                         _TRACE(_T("errno = %d <failed to retrieve error string>\n"), err);
@@ -89,9 +89,9 @@ namespace
                     {
                         _TRACE(_T("errno = %d, %s\n"), err, buf);
                     }
+#endif // _DEBUG
                     return false;
                 }
-#endif // _DEBUG
 #if defined(UNICODE) || defined(_UNICODE)
                 // We want to output as UTF-8
                 if (m_file)
@@ -512,6 +512,31 @@ namespace
                 {
                     m_sNormalizedPath.SetAt(i, _T('\\'));
                 }
+            }
+            size_t const nOffset = _countof(WIN32_FILE_NAMESPACE_A) - 1;
+            if (m_sNormalizedPath.Left(nOffset) != _T(WIN32_FILE_NAMESPACE_A)
+                && m_sNormalizedPath.Left(nOffset) != _T(WIN32_DEVICE_NAMESPACE_A))
+            {
+                CString sFullPathBuf(_T(WIN32_FILE_NAMESPACE_A));
+                LPTSTR lpszFullPathBuf = &sFullPathBuf.GetBufferSetLength(0x8000)[nOffset];
+                DWORD nBufferLength = sFullPathBuf.GetLength() - nOffset - 1;
+                LPTSTR lpszFileName = NULL;
+                DWORD dwLength = ::GetFullPathName(m_sNormalizedPath, nBufferLength, lpszFullPathBuf, &lpszFileName);
+                if (!dwLength)
+                {
+                    _TRACE(_T("[ERROR:%d] Failed to get full path from \"%s\" (%s)."), GetLastError(), m_sNormalizedPath.GetString(), formatMessage(NULL, GetLastError()).GetString());
+                    m_lError = GetLastError();
+                    m_bValid = FALSE;
+                    return m_bValid;
+                }
+                if (dwLength > nBufferLength)
+                {
+                    _TRACE(_T("[ERROR:%d] Buffer too small to get full path from \"%s\" (%s)."), GetLastError(), m_sNormalizedPath.GetString(), formatMessage(NULL, GetLastError()).GetString());
+                    m_lError = GetLastError();
+                    m_bValid = FALSE;
+                    return m_bValid;
+                }
+                m_sNormalizedPath = sFullPathBuf;
             }
             DWORD dwAttr = ::GetFileAttributes(m_sNormalizedPath);
             // For all we know it's a file or a path with wildcard characters at
