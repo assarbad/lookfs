@@ -29,7 +29,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef __NTNATIVE_H_VER__
-#define __NTNATIVE_H_VER__ 2018032120
+#define __NTNATIVE_H_VER__ 2018032721
 #if (defined(_MSC_VER) && (_MSC_VER >= 1020)) || defined(__MCPP)
 #pragma once
 #endif // Check for "#pragma once" support
@@ -979,6 +979,7 @@ NtQueryValueKey(
     _Out_ PULONG ResultLength
 );
 
+#pragma warning(suppress:28252)
 NTSTATUS
 NTAPI
 NtRenameKey(
@@ -1058,6 +1059,15 @@ NTAPI
 RtlAppendUnicodeToString(
     _In_ PUNICODE_STRING Destination,
     _In_opt_ PCWSTR Source
+);
+
+_Must_inspect_result_
+BOOLEAN
+NTAPI
+RtlPrefixUnicodeString(
+    _In_ PCUNICODE_STRING String1,
+    _In_ PCUNICODE_STRING String2,
+    _In_ BOOLEAN CaseInSensitive
 );
 
 NTSTATUS /* VOID in pre-Vista */
@@ -1294,6 +1304,7 @@ typedef BOOLEAN (NTAPI *RtlEqualUnicodeString_t)(_In_ PCUNICODE_STRING, _In_ PCU
 typedef VOID (NTAPI *RtlCopyUnicodeString_t)(_In_ PUNICODE_STRING, _In_ PCUNICODE_STRING);
 typedef NTSTATUS (NTAPI *RtlAppendUnicodeStringToString_t)(_In_ PUNICODE_STRING, _In_ PCUNICODE_STRING);
 typedef NTSTATUS (NTAPI *RtlAppendUnicodeToString_t)(_In_ PUNICODE_STRING, _In_opt_ PCWSTR);
+typedef BOOLEAN (NTAPI *RtlPrefixUnicodeString_t)(_In_ PCUNICODE_STRING, _In_ PCUNICODE_STRING, _In_ BOOLEAN);
 typedef NTSTATUS (NTAPI *RtlGenerate8dot3Name_t)(_In_ PCUNICODE_STRING, _In_ BOOLEAN, _Inout_ PGENERATE_NAME_CONTEXT, _Inout_ PUNICODE_STRING);
 typedef NTSTATUS (NTAPI *RtlVolumeDeviceToDosName_t)(_In_ PVOID, _Out_ PUNICODE_STRING);
 typedef NTSTATUS (NTAPI *NtCreateSection_t)(_Out_ PHANDLE, _In_ ACCESS_MASK, _In_opt_ POBJECT_ATTRIBUTES, _In_opt_ PLARGE_INTEGER, _In_ ULONG, _In_ ULONG, _In_opt_ HANDLE);
@@ -1423,9 +1434,29 @@ typedef ULONG (NTAPI *RtlUniform_t)(PULONG);
 namespace NT {
 #endif
 
-static UNICODE_STRING const sWin32FileNsPfx = RTL_CONSTANT_STRING(L"\\\\?\\");
-static UNICODE_STRING const sWin32DeviceNsPfx = RTL_CONSTANT_STRING(L"\\\\.\\");
-static UNICODE_STRING const sNtNsPfx = RTL_CONSTANT_STRING(L"\\??\\");
+#ifndef WIN32_FILE_NAMESPACE
+#define WIN32_FILE_NAMESPACE        L"\\\\?\\"
+#endif // WIN32_FILE_NAMESPACE
+#ifndef WIN32_DEVICE_NAMESPACE
+#define WIN32_DEVICE_NAMESPACE      L"\\\\.\\"
+#endif // WIN32_DEVICE_NAMESPACE
+#ifndef NT_OBJMGR_NAMESPACE
+#define NT_OBJMGR_NAMESPACE         L"\\??\\"
+#endif // NT_OBJMGR_NAMESPACE
+
+#ifndef WIN32_FILE_NAMESPACE_A
+#define WIN32_FILE_NAMESPACE_A      "\\\\?\\"
+#endif // WIN32_FILE_NAMESPACE_A
+#ifndef WIN32_DEVICE_NAMESPACE_A
+#define WIN32_DEVICE_NAMESPACE_A    "\\\\.\\"
+#endif // WIN32_DEVICE_NAMESPACE_A
+#ifndef NT_OBJMGR_NAMESPACE_A
+#define NT_OBJMGR_NAMESPACE_A       L"\\??\\"
+#endif // NT_OBJMGR_NAMESPACE_A
+
+static UNICODE_STRING const sWin32FileNsPfx = RTL_CONSTANT_STRING(WIN32_FILE_NAMESPACE);
+static UNICODE_STRING const sWin32DeviceNsPfx = RTL_CONSTANT_STRING(WIN32_DEVICE_NAMESPACE);
+static UNICODE_STRING const sNtObjMgrNsPfx = RTL_CONSTANT_STRING(NT_OBJMGR_NAMESPACE);
 
 #if defined(__cplusplus)
 }

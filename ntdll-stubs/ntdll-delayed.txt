@@ -89,3 +89,4 @@ EXPORTS
     RtlCopyUnicodeString
     RtlAppendUnicodeStringToString
     RtlAppendUnicodeToString
+    RtlPrefixUnicodeString

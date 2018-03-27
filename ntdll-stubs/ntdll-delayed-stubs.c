@@ -726,3 +726,11 @@ RtlAppendUnicodeToString(
     _In_ PUNICODE_STRING Destination,
     _In_opt_ PCWSTR Source
     ) { return 0; }
+
+BOOLEAN
+NTAPI
+RtlPrefixUnicodeString(
+    _In_ PCUNICODE_STRING String1,
+    _In_ PCUNICODE_STRING String2,
+    _In_ BOOLEAN CaseInSensitive
+    ) { return FALSE; }
