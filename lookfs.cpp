@@ -258,7 +258,7 @@ namespace
             return _T("<reserved reparse tag 0>");
         case IO_REPARSE_TAG_RESERVED_ONE:
             return _T("<reserved reparse tag 1>");
-        case IO_REPARSE_TAG_DRIVER_EXTENDER:
+        case IO_REPARSE_TAG_DRIVE_EXTENDER:
             return _T("Home server drive extender reparse point");
         case IO_REPARSE_TAG_FILTER_MANAGER:
             return _T("Filter manager test harness reparse point");
@@ -382,7 +382,7 @@ namespace
             }
             if (adjustPaths_())
             {
-                CString sSearchPath(m_sDirectory.GetString());
+                CString sSearchPath(m_sDirectory);
                 sSearchPath += m_sSearchMask;
                 m_hFind = NativeFindFirstFile(sSearchPath, &m_fd, bCaseSensitive);
                 if (INVALID_HANDLE_VALUE != m_hFind)
@@ -506,7 +506,7 @@ namespace
         {
             // Replace forward slashes by backward slashes
             m_sNormalizedPath.TrimRight(_T("\\/"));
-            for (int i = 0; i < m_sNormalizedPath.GetLength(); i++)
+            for (size_t i = 0; i < _tcslen(m_sNormalizedPath); i++)
             {
                 if (m_sNormalizedPath.GetAt(i) == _T('/'))
                 {
@@ -536,6 +536,7 @@ namespace
                     m_bValid = FALSE;
                     return m_bValid;
                 }
+                sFullPathBuf.ReleaseBuffer();
                 m_sNormalizedPath = sFullPathBuf;
             }
             DWORD dwAttr = ::GetFileAttributes(m_sNormalizedPath);
@@ -560,7 +561,7 @@ namespace
             if ((INVALID_FILE_ATTRIBUTES != dwAttr) && (FILE_ATTRIBUTE_DIRECTORY & dwAttr))
             {
                 m_sDirectory = m_sNormalizedPath;
-                if (m_sDirectory.GetAt(m_sDirectory.GetLength() - 1) != _T('\\'))
+                if (m_sDirectory.GetAt(_tcslen(m_sDirectory) - 1) != _T('\\'))
                 {
                     m_sDirectory.AppendChar(_T('\\'));
                 }
@@ -599,7 +600,7 @@ namespace
         );
         _tprintf(_T("  -?, -h, --help\n\tShow this help and exit\n"));
         _tprintf(_T("  -V, --version\n\tShow program version and exit\n"));
-        _tprintf(_T("  -L, --nologo\n\tDon't show program banner text\n"));
+        _tprintf(_T("  -L, --nologo, --nobanner\n\tDon't show program banner text\n"));
         _tprintf(_T("  -E, --noerror\n\tDon't show errors, only show output from success\n"));
         _tprintf(_T("  -v, --verbose\n\tShow more verbose output\n"));
         _tprintf(_T("  -i, --nocase, --case-insensitive\n\tWork case-insensitive\n"));
@@ -622,9 +623,7 @@ namespace
         int iRet = 0;
         do
         {
-            /*
-                        static DWORD const REPARSE_DIR = (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT);
-            */
+            static DWORD const FILE_ATTRIBUTE_REPARSE_DIR = (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT);
             if (!pathFinder)
             {
                 /*
@@ -662,13 +661,13 @@ namespace
                 // Don't follow reparse points in any case
                 if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT))
                 {
-                    //path.AppendFormat(_T("\\%s"), pathFinder.getSearchMask());
                     // Recurse into subdirectory
                     int err = traversePath(path, sett);
                     if (err)
                     {
                         iRet = err;
                     }
+                    return iRet;
                 }
             }
             // Not only directories can be reparse points

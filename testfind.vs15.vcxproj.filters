@@ -2,22 +2,16 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Special Files">
-      <UniqueIdentifier>{7812CC91-FED5-D316-0ADC-03BD6E1D8419}</UniqueIdentifier>
+      <UniqueIdentifier>{B0D21331-1448-1D30-57FB-0BE32FD6E120}</UniqueIdentifier>
     </Filter>
     <Filter Include="Special Files\Module Definition Files">
-      <UniqueIdentifier>{A6653692-A4ED-2418-6417-B4AFFE3C75EC}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{18E1CFE4-D565-CA4F-51E2-3C21A7E6A4DE}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\simpleopt">
-      <UniqueIdentifier>{9D5B5119-D3FE-B63D-055E-753711E6A7A2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{468367F1-9B82-8FCF-A421-501D854EA717}</UniqueIdentifier>
+      <UniqueIdentifier>{01B74DC0-2962-A978-73B2-CA835EC86EF7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files">
-      <UniqueIdentifier>{A2221E43-DA1C-30E4-D176-8A03371182C9}</UniqueIdentifier>
+      <UniqueIdentifier>{61D0BF5D-ACE9-34C6-C859-01FFDF9BB852}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{47FC6CC9-B115-51DB-3BBF-84E2FB0EB16B}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -44,12 +38,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="thirdparty\simpleopt\SimpleGlob.h">
-      <Filter>Header Files\simpleopt</Filter>
-    </ClInclude>
-    <ClInclude Include="thirdparty\simpleopt\SimpleOpt.h">
-      <Filter>Header Files\simpleopt</Filter>
-    </ClInclude>
     <ClInclude Include="exeversion.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -68,26 +56,8 @@
     <ClInclude Include="ReparseTags.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AlternateDataStreams.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="lookfs.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ReparsePoint.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VersionInfo.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VerySimpleBuf.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="lookfs.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="delayimp.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -97,10 +67,8 @@
     <ClCompile Include="priv.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="exeversion.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
+    <ClCompile Include="testfind.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

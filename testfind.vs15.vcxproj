@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{659D3E1E-54E8-4B72-A40A-CD3A2C67D0B0}</ProjectGuid>
-    <RootNamespace>lookfs</RootNamespace>
+    <ProjectGuid>{7B75E172-B432-4582-91FB-7D0A364A0308}</ProjectGuid>
+    <RootNamespace>testfind</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -67,28 +67,28 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>bin\</OutDir>
     <IntDir>intermediate\vs2017_$(Platform)_$(Configuration)\$(ProjectName)\</IntDir>
-    <TargetName>lookfs32D</TargetName>
+    <TargetName>testfind32D</TargetName>
     <TargetExt>.exe</TargetExt>
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>bin\</OutDir>
     <IntDir>intermediate\vs2017_$(Platform)_$(Configuration)\$(ProjectName)\</IntDir>
-    <TargetName>lookfs64D</TargetName>
+    <TargetName>testfind64D</TargetName>
     <TargetExt>.exe</TargetExt>
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>bin\</OutDir>
     <IntDir>intermediate\vs2017_$(Platform)_$(Configuration)\$(ProjectName)\</IntDir>
-    <TargetName>lookfs32</TargetName>
+    <TargetName>testfind32</TargetName>
     <TargetExt>.exe</TargetExt>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>bin\</OutDir>
     <IntDir>intermediate\vs2017_$(Platform)_$(Configuration)\$(ProjectName)\</IntDir>
-    <TargetName>lookfs64</TargetName>
+    <TargetName>testfind64</TargetName>
     <TargetExt>.exe</TargetExt>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
@@ -113,15 +113,12 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ntdll-delayed.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)lookfs32D.exe</OutputFile>
+      <AdditionalDependencies>ntdll-delayed.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)testfind32D.exe</OutputFile>
       <AdditionalLibraryDirectories>$(IntDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalOptions>/delay:nobind /delayload:ntdll-delayed.dll /delayload:version.dll %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/delay:nobind /delayload:ntdll-delayed.dll %(AdditionalOptions)</AdditionalOptions>
     </Link>
-    <PostBuildEvent>
-      <Command>call &quot;$(ProjectDir)\testgen.cmd&quot;</Command>
-    </PostBuildEvent>
     <PreBuildEvent>
       <Command>call &quot;$(ProjectDir)\hgid.cmd&quot;&#x0D;&#x0A;cl.exe /nologo /c /TC /Ob0 /Gz ntdll-stubs\ntdll-delayed-stubs.c &quot;/Fo$(IntDir)\ntdll-delayed-stubs.obj&quot;&#x0D;&#x0A;lib.exe /nologo &quot;/def:ntdll-stubs\ntdll-delayed.txt&quot; &quot;/out:$(IntDir)\ntdll-delayed.lib&quot; /machine:x86 &quot;$(IntDir)\ntdll-delayed-stubs.obj&quot;</Command>
     </PreBuildEvent>
@@ -147,15 +144,12 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ntdll-delayed.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)lookfs64D.exe</OutputFile>
+      <AdditionalDependencies>ntdll-delayed.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)testfind64D.exe</OutputFile>
       <AdditionalLibraryDirectories>$(IntDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalOptions>/delay:nobind /delayload:ntdll-delayed.dll /delayload:version.dll %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/delay:nobind /delayload:ntdll-delayed.dll %(AdditionalOptions)</AdditionalOptions>
     </Link>
-    <PostBuildEvent>
-      <Command>call &quot;$(ProjectDir)\testgen.cmd&quot;</Command>
-    </PostBuildEvent>
     <PreBuildEvent>
       <Command>call &quot;$(ProjectDir)\hgid.cmd&quot;&#x0D;&#x0A;lib.exe /nologo /nodefaultlib &quot;/def:ntdll-stubs\ntdll-delayed.txt&quot; &quot;/out:$(IntDir)\ntdll-delayed.lib&quot; /machine:x64</Command>
     </PreBuildEvent>
@@ -183,15 +177,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>ntdll-delayed.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)lookfs32.exe</OutputFile>
+      <AdditionalDependencies>ntdll-delayed.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)testfind32.exe</OutputFile>
       <AdditionalLibraryDirectories>$(IntDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalOptions>/delay:nobind /delayload:ntdll-delayed.dll /delayload:version.dll /release /subsystem:console,5.01 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/delay:nobind /delayload:ntdll-delayed.dll /release /subsystem:console,5.01 %(AdditionalOptions)</AdditionalOptions>
     </Link>
-    <PostBuildEvent>
-      <Command>call &quot;$(ProjectDir)\testgen.cmd&quot;</Command>
-    </PostBuildEvent>
     <PreBuildEvent>
       <Command>call &quot;$(ProjectDir)\hgid.cmd&quot;&#x0D;&#x0A;cl.exe /nologo /c /TC /Ob0 /Gz ntdll-stubs\ntdll-delayed-stubs.c &quot;/Fo$(IntDir)\ntdll-delayed-stubs.obj&quot;&#x0D;&#x0A;lib.exe /nologo &quot;/def:ntdll-stubs\ntdll-delayed.txt&quot; &quot;/out:$(IntDir)\ntdll-delayed.lib&quot; /machine:x86 &quot;$(IntDir)\ntdll-delayed-stubs.obj&quot;</Command>
     </PreBuildEvent>
@@ -219,37 +210,25 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>ntdll-delayed.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)lookfs64.exe</OutputFile>
+      <AdditionalDependencies>ntdll-delayed.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)testfind64.exe</OutputFile>
       <AdditionalLibraryDirectories>$(IntDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalOptions>/delay:nobind /delayload:ntdll-delayed.dll /delayload:version.dll /release /subsystem:console,5.02 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/delay:nobind /delayload:ntdll-delayed.dll /release /subsystem:console,5.02 %(AdditionalOptions)</AdditionalOptions>
     </Link>
-    <PostBuildEvent>
-      <Command>call &quot;$(ProjectDir)\testgen.cmd&quot;</Command>
-    </PostBuildEvent>
     <PreBuildEvent>
       <Command>call &quot;$(ProjectDir)\hgid.cmd&quot;&#x0D;&#x0A;lib.exe /nologo /nodefaultlib &quot;/def:ntdll-stubs\ntdll-delayed.txt&quot; &quot;/out:$(IntDir)\ntdll-delayed.lib&quot; /machine:x64</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="thirdparty\simpleopt\SimpleGlob.h" />
-    <ClInclude Include="thirdparty\simpleopt\SimpleOpt.h" />
     <ClInclude Include="exeversion.h" />
     <ClInclude Include="FileAttributes.h" />
     <ClInclude Include="ntfindfile.h" />
     <ClInclude Include="ntnative.h" />
     <ClInclude Include="priv.h" />
     <ClInclude Include="ReparseTags.h" />
-    <ClInclude Include="AlternateDataStreams.hpp" />
-    <ClInclude Include="lookfs.hpp" />
-    <ClInclude Include="ReparsePoint.hpp" />
-    <ClInclude Include="VersionInfo.hpp" />
-    <ClInclude Include="VerySimpleBuf.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="lookfs.cpp">
-    </ClCompile>
     <ClCompile Include="delayimp.c">
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
@@ -257,6 +236,9 @@
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
     <ClCompile Include="priv.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="testfind.c">
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
   </ItemGroup>
@@ -268,9 +250,6 @@
     <None Include="testgen.cmd" />
     <None Include="README.rst" />
     <None Include="premake4.lua" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="exeversion.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

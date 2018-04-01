@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="lookfs"
-	ProjectGUID="{659D3E1E-54E8-4B72-A40A-CD3A2C67D0B0}"
-	RootNamespace="lookfs"
+	Name="testfind"
+	ProjectGUID="{7B75E172-B432-4582-91FB-7D0A364A0308}"
+	RootNamespace="testfind"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -69,9 +69,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/delay:nobind /delayload:ntdll-delayed.dll /delayload:version.dll"
-				AdditionalDependencies="ntdll-delayed.lib version.lib"
-				OutputFile="$(OutDir)\lookfs32D.exe"
+				AdditionalOptions="/delay:nobind /delayload:ntdll-delayed.dll"
+				AdditionalDependencies="ntdll-delayed.lib"
+				OutputFile="$(OutDir)\testfind32D.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(IntDir);$(IntDir)"
 				GenerateDebugInformation="true"
@@ -101,7 +101,6 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="call &quot;$(ProjectDir)\testgen.cmd&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -156,9 +155,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/delay:nobind /delayload:ntdll-delayed.dll /delayload:version.dll"
-				AdditionalDependencies="ntdll-delayed.lib version.lib"
-				OutputFile="$(OutDir)\lookfs64D.exe"
+				AdditionalOptions="/delay:nobind /delayload:ntdll-delayed.dll"
+				AdditionalDependencies="ntdll-delayed.lib"
+				OutputFile="$(OutDir)\testfind64D.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(IntDir);$(IntDir)"
 				GenerateDebugInformation="true"
@@ -188,7 +187,6 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="call &quot;$(ProjectDir)\testgen.cmd&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -242,9 +240,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/delay:nobind /delayload:ntdll-delayed.dll /delayload:version.dll /release /subsystem:console,5.00 /opt:nowin98"
-				AdditionalDependencies="ntdll-delayed.lib version.lib"
-				OutputFile="$(OutDir)\lookfs32.exe"
+				AdditionalOptions="/delay:nobind /delayload:ntdll-delayed.dll /release /subsystem:console,5.00 /opt:nowin98"
+				AdditionalDependencies="ntdll-delayed.lib"
+				OutputFile="$(OutDir)\testfind32.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(IntDir);$(IntDir)"
 				GenerateDebugInformation="true"
@@ -276,7 +274,6 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="call &quot;$(ProjectDir)\testgen.cmd&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -331,9 +328,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/delay:nobind /delayload:ntdll-delayed.dll /delayload:version.dll /release /subsystem:console,5.02 /opt:nowin98"
-				AdditionalDependencies="ntdll-delayed.lib version.lib"
-				OutputFile="$(OutDir)\lookfs64.exe"
+				AdditionalOptions="/delay:nobind /delayload:ntdll-delayed.dll /release /subsystem:console,5.02 /opt:nowin98"
+				AdditionalDependencies="ntdll-delayed.lib"
+				OutputFile="$(OutDir)\testfind64.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(IntDir);$(IntDir)"
 				GenerateDebugInformation="true"
@@ -365,7 +362,6 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="call &quot;$(ProjectDir)\testgen.cmd&quot;"
 			/>
 		</Configuration>
 	</Configurations>
@@ -377,15 +373,7 @@
 			Filter=""
 			>
 			<File
-				RelativePath="AlternateDataStreams.hpp"
-				>
-			</File>
-			<File
 				RelativePath="FileAttributes.h"
-				>
-			</File>
-			<File
-				RelativePath="ReparsePoint.hpp"
 				>
 			</File>
 			<File
@@ -393,19 +381,7 @@
 				>
 			</File>
 			<File
-				RelativePath="VersionInfo.hpp"
-				>
-			</File>
-			<File
-				RelativePath="VerySimpleBuf.hpp"
-				>
-			</File>
-			<File
 				RelativePath="exeversion.h"
-				>
-			</File>
-			<File
-				RelativePath="lookfs.hpp"
 				>
 			</File>
 			<File
@@ -418,28 +394,6 @@
 			</File>
 			<File
 				RelativePath="priv.h"
-				>
-			</File>
-			<Filter
-				Name="simpleopt"
-				Filter=""
-				>
-				<File
-					RelativePath="thirdparty\simpleopt\SimpleGlob.h"
-					>
-				</File>
-				<File
-					RelativePath="thirdparty\simpleopt\SimpleOpt.h"
-					>
-				</File>
-			</Filter>
-		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter=""
-			>
-			<File
-				RelativePath="exeversion.rc"
 				>
 			</File>
 		</Filter>
@@ -484,10 +438,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="lookfs.cpp"
-				>
-			</File>
-			<File
 				RelativePath="ntfindfile.c"
 				>
 				<FileConfiguration
@@ -525,6 +475,42 @@
 			</File>
 			<File
 				RelativePath="priv.c"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="1"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						CompileAs="1"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="testfind.c"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"

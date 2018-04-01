@@ -8,6 +8,7 @@
 local action = _ACTION or ""
 local release = false
 local tgtname = "lookfs"
+local tstname = "testfind"
 if _OPTIONS["release"] then
     print "INFO: Creating release build solution."
     release = true
@@ -238,6 +239,7 @@ solution (tgtname .. iif(release, "_release", ""))
         {
             "hgid.h",
             "Backup*.*",
+            "testfind.c",
         }
 
         files
@@ -266,6 +268,111 @@ solution (tgtname .. iif(release, "_release", ""))
         configuration {"*"}
             prebuildcommands{"call \"$(ProjectDir)\\hgid.cmd\"",}
             postbuildcommands{"call \"$(ProjectDir)\\testgen.cmd\"",}
+
+        configuration {"x64"}
+            prebuildcommands{"lib.exe /nologo /nodefaultlib \"/def:ntdll-stubs\\ntdll-delayed.txt\" \"/out:$(IntDir)\\ntdll-delayed.lib\" /machine:x64",}
+
+        configuration {"x32"}
+            prebuildcommands{"cl.exe /nologo /c /TC /Ob0 /Gz ntdll-stubs\\ntdll-delayed-stubs.c \"/Fo$(IntDir)\\ntdll-delayed-stubs.obj\"", "lib.exe /nologo \"/def:ntdll-stubs\\ntdll-delayed.txt\" \"/out:$(IntDir)\\ntdll-delayed.lib\" /machine:x86 \"$(IntDir)\\ntdll-delayed-stubs.obj\"",}
+
+        configuration {"Debug", "x32"}
+            targetsuffix    ("32D")
+
+        configuration {"Debug", "x64"}
+            targetsuffix    ("64D")
+
+        configuration {"Release", "x32"}
+            targetsuffix    ("32")
+            if _OPTIONS["msvcrt"] then
+                links       {"comdlg32", "$(WLHBASE)\\lib\\crt\\i386\\msvcrt.lib", "$(WLHBASE)\\lib\\w2k\\i386\\strsafe.lib", "$(WLHBASE)\\lib\\w2k\\i386\\msvcrt_win2000.obj"}
+                defines     {"USE_W2K_COMPAT"}
+            end
+
+        configuration {"Release", "x64"}
+            targetsuffix    ("64")
+            if _OPTIONS["msvcrt"] then
+                links       {"comdlg32", "$(WLHBASE)\\lib\\crt\\amd64\\msvcrt.lib", "$(WLHBASE)\\lib\\wnet\\amd64\\strsafe.lib", "$(WLHBASE)\\lib\\wnet\\amd64\\msvcrt_win2003.obj"}
+                defines     {"USE_W2K_COMPAT"}
+            end
+
+        configuration {"Debug"}
+            defines         {"_DEBUG"}
+            flags           {"Symbols",}
+
+        configuration {"Release"}
+            defines         {"NDEBUG"}
+            flags           {"Optimize", "Symbols", "NoMinimalRebuild", "NoIncrementalLink", "NoEditAndContinue"}
+            linkoptions     {"/release"}
+            buildoptions    {"/Oi", "/Os", "/Gy"}
+
+        configuration {"vs2002 or vs2003 or vs2005 or vs2008", "Release"}
+            buildoptions    {"/Oy"}
+
+        configuration {"vs2002 or vs2003 or vs2005 or vs2008 or vs2010", "Release", "x32"}
+            linkoptions     {"/subsystem:console,5.00"}
+
+        configuration {"vs2012 or vs2013 or vs2015 or vs2017", "Release", "x32"}
+            linkoptions     {"/subsystem:console,5.01"}
+
+        configuration {"Release", "x64"}
+            linkoptions     {"/subsystem:console,5.02"}
+
+        configuration {"vs2013 or vs2015 or vs2017"}
+            defines         {"WINVER=0x0501", "_ALLOW_RTCc_IN_STL"}
+
+        configuration {"vs2002 or vs2003 or vs2005 or vs2008 or vs2010 or vs2012", "x32"}
+            defines         {"WINVER=0x0500"}
+
+        configuration {"vs2005 or vs2008 or vs2010 or vs2012", "x64"}
+            defines         {"WINVER=0x0501"}
+
+        configuration {"vs2005 or vs2008", "Release"}
+            linkoptions     {"/opt:nowin98"}
+
+    project (tstname .. iif(release, "_release", ""))
+        local int_dir   = iif(release, "release_", "").."intermediate/" .. action .. "_$(" .. transformMN("Platform") .. ")_$(" .. transformMN("Configuration") .. ")\\$(ProjectName)"
+        uuid            ("7B75E172-B432-4582-91FB-7D0A364A0308")
+        language        ("C++")
+        kind            ("ConsoleApp")
+        targetname      (tstname)
+        flags           {"Unicode", "NativeWChar", "ExtraWarnings", "WinMain", "NoRTTI",}
+        targetdir       (iif(release, tstname .. "_release", "bin"))
+        objdir          (int_dir)
+        libdirs         {"$(IntDir)"}
+        links           {"ntdll-delayed"}
+        linkoptions     {"/delay:nobind","/delayload:ntdll-delayed.dll"}
+        resoptions      {"/nologo", "/l409"}
+        defines         {"RP_QUERY_FILE_ID", "_CONSOLE", "WIN32", "_WINDOWS", "STRICT"}
+        if not _OPTIONS["msvcrt"] then
+            flags       {"StaticRuntime"}
+        end
+
+        excludes
+        {
+            "hgid.h",
+            "Backup*.*",
+        }
+
+        files
+        {
+            "ntdll-stubs/*.txt",
+            "*.c",
+            "*.h",
+            "*.cmd", "*.md", "*.rst", "premake4.lua",
+        }
+
+        vpaths
+        {
+            ["Header Files/*"] = { "*.h", "*.hpp" },
+            ["Header Files/simpleopt/*"] = { "thirdparty/simpleopt/*.h" },
+            ["Resource Files/*"] = { "**.rc" },
+            ["Source Files/*"] = { "*.cpp", "*.c" },
+            ["Special Files/*"] = { "**.cmd", "premake4.lua", "*.rst", "*.txt", },
+            ["Special Files/Module Definition Files/*"] = { "ntdll-stubs/*.txt", },
+        }
+
+        configuration {"*"}
+            prebuildcommands{"call \"$(ProjectDir)\\hgid.cmd\"",}
 
         configuration {"x64"}
             prebuildcommands{"lib.exe /nologo /nodefaultlib \"/def:ntdll-stubs\\ntdll-delayed.txt\" \"/out:$(IntDir)\\ntdll-delayed.lib\" /machine:x64",}

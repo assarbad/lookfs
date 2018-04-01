@@ -36,8 +36,13 @@ __declspec(thread) static RtlNtStatusToDosError_t pfnRtlNtStatusToDosError = NUL
 #define SetLastErrorFromNtError(x) SetLastError((LONG)pfnRtlNtStatusToDosError(x))
 
 /* adjust these two items if you want to query another info class */
+#ifndef OUR_NATIVE_INFO
 #define OUR_NATIVE_INFO FILE_BOTH_DIR_INFORMATION
+#endif // OUR_NATIVE_INFO
+#ifndef OurNativeInfoClass
 #define OurNativeInfoClass FileInformationBothDirectory
+#endif // OurNativeInfoClass
+
 /*
 Possible pairings:
 
@@ -48,7 +53,7 @@ FILE_ID_BOTH_DIR_INFORMATION ->FileInformationIdBothDirectory
 
 More exist, check out ntnative.h
 
-STATUS_INVALID_INFO_CLASS
+STATUS_INVALID_INFO_CLASS will be returned by the OS if one isn't supported.
 */
 
 /* adjust this to use larger buffers for querying the entries from a directory */
