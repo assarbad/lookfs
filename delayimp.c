@@ -41,15 +41,21 @@
 #ifndef FACILITY_VISUALCPP
 #   define FACILITY_VISUALCPP  ((LONG)0x6d)
 #endif // !FACILITY_VISUALCPP
+#pragma warning(disable:4201)
 #include <delayimp.h>
+#pragma warning(default:4201)
 
 #pragma comment(lib, "delayimp")
 
+#ifdef __cplusplus
 namespace
 {
+#endif // __cplusplus
     LPCSTR lpszNtDllName = "ntdll.dll";
     LPCSTR lpszNtDelayedDllName = "ntdll-delayed.dll";
+#ifdef __cplusplus
 }
+#endif // __cplusplus
 
 static LONG WINAPI DelayLoadFilter(PEXCEPTION_POINTERS pExcPointers)
 {
@@ -106,10 +112,12 @@ static FARPROC WINAPI NtdllDliHook(unsigned dliNotify, PDelayLoadInfo pdli)
     case dliNotePreLoadLibrary:
         if(0 == lstrcmpiA(pdli->szDll, lpszNtDelayedDllName))
         {
-            if(HMODULE hNtDll = ::GetModuleHandleA(lpszNtDllName))
+            HMODULE hNtDll;
+            if(NULL != (hNtDll = GetModuleHandleA(lpszNtDllName)))
             {
                 /*lint -save -e611 */
-                return reinterpret_cast<FARPROC>(hNtDll);
+#               pragma warning(suppress:4055)
+                return (FARPROC)(hNtDll);
                 /*lint -restore */
             }
         }
