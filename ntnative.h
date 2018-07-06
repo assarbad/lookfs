@@ -29,7 +29,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef __NTNATIVE_H_VER__
-#define __NTNATIVE_H_VER__ 2018032721
+#define __NTNATIVE_H_VER__ 2018063019
 #if (defined(_MSC_VER) && (_MSC_VER >= 1020)) || defined(__MCPP)
 #pragma once
 #endif // Check for "#pragma once" support
@@ -979,6 +979,17 @@ NtQueryValueKey(
     _Out_ PULONG ResultLength
 );
 
+NTSTATUS
+NTAPI
+NtSetValueKey(
+    _In_ HANDLE KeyHandle,
+    _In_ PUNICODE_STRING ValueName,
+    _In_opt_ ULONG TitleIndex,
+    _In_ ULONG Type,
+    _In_reads_bytes_(DataSize) PVOID Data,
+    _In_ ULONG DataSize
+);
+
 #pragma warning(suppress:28252)
 NTSTATUS
 NTAPI
@@ -1293,6 +1304,7 @@ typedef NTSTATUS (NTAPI *NtEnumerateKey_t)(_In_ HANDLE, _In_ ULONG, _In_ KEY_INF
 typedef NTSTATUS (NTAPI *NtEnumerateValueKey_t)(_In_ HANDLE, _In_ ULONG, _In_ KEY_VALUE_INFORMATION_CLASS, _Out_ PVOID, _In_ ULONG, _Out_ PULONG);
 typedef NTSTATUS (NTAPI *NtQueryKey_t)(_In_ HANDLE, _In_ KEY_INFORMATION_CLASS, _Out_ PVOID, _In_ ULONG, _Out_ PULONG);
 typedef NTSTATUS (NTAPI *NtQueryValueKey_t)(_In_ HANDLE, _In_ PUNICODE_STRING, _In_ KEY_VALUE_INFORMATION_CLASS, _Out_ PVOID, _In_ ULONG, _Out_ PULONG);
+typedef NTSTATUS (NTAPI *NtSetValueKey_t)(_In_ HANDLE, _In_ PUNICODE_STRING, _In_opt_ ULONG, _In_ ULONG, _In_ PVOID, _In_ ULONG);
 typedef NTSTATUS (NTAPI *NtRenameKey_t)(_In_ HANDLE, _In_ PUNICODE_STRING);
 typedef NTSTATUS (NTAPI *RtlValidateUnicodeString_t)(_In_ _Reserved_ ULONG, _In_ PCUNICODE_STRING);
 typedef NTSTATUS (NTAPI *RtlDowncaseUnicodeString_t)(PUNICODE_STRING, _In_ PCUNICODE_STRING, _In_ BOOLEAN);
@@ -1372,13 +1384,19 @@ typedef ULONG (NTAPI *RtlUniform_t)(PULONG);
 */
 #define NTNATIVE_GETPROCADDR(mod, x) GetProcAddress(mod, #x)
 /*
+  Use to coerce the type returned from GetProcAddress()
+    Example     : NTNATIVE_GETFUNC(hNtDll, RtlGetVersion)
+    Expands to  : (RtlGetVersion_t)GetProcAddress(hNtDll, "RtlGetVersion")
+*/
+#define NTNATIVE_GETFUNC(mod, x) (x##_t)NTNATIVE_GETPROCADDR(mod, x)
+/*
   Use to declare a variable of the same name as the function and assign it the
   function's pointer by passing a module handle. Uses GetProcAddress() to do the
   job.
     Example     : NTNATIVE_DEFFUNC(hNtDll, RtlGetVersion);
     Expands to  : RtlGetVersion_t RtlGetVersion = (RtlGetVersion_t)GetProcAddress(hNtDll, "RtlGetVersion");
 */
-#define NTNATIVE_DEFFUNC(mod, x) NTNATIVE_FUNC(x) = (x##_t)NTNATIVE_GETPROCADDR(mod, x)
+#define NTNATIVE_DEFFUNC(mod, x) NTNATIVE_FUNC(x) = NTNATIVE_GETFUNC(mod, x)
 /*
   Use to declare a variable of the same name as the function and assign it the
   function's pointer. Uses GetProcAddress() to do the job.
@@ -1386,6 +1404,16 @@ typedef ULONG (NTAPI *RtlUniform_t)(PULONG);
     Expands to  : RtlGetVersion_t RtlGetVersion = (RtlGetVersion_t)GetProcAddress(hNtDll, "RtlGetVersion");
 */
 #define NTDLL_DEFFUNC(x) NTNATIVE_DEFFUNC(hNtDll, x)
+
+#define LOCAL_NTNATIVE_FUNC(x) \
+    static NTNATIVE_FUNC(x) = 0; \
+    do { \
+    static HMODULE hNtDll = NULL; \
+    if (!hNtDll) { hNtDll = GetModuleHandle(L"ntdll.dll"); } \
+    if (!hNtDll) { return STATUS_NOT_IMPLEMENTED; } \
+    if (!x) { x = NTNATIVE_GETFUNC(hNtDll, x); } \
+    if (!x) { return STATUS_NOT_IMPLEMENTED; } \
+    } while(0)
 
 #define ZwClose NtClose
 #define ZwCreateFile NtCreateFile
@@ -1419,6 +1447,7 @@ typedef ULONG (NTAPI *RtlUniform_t)(PULONG);
 #define ZwEnumerateKey NtEnumerateKey
 #define ZwEnumerateValueKey NtEnumerateValueKey
 #define ZwQueryValueKey NtQueryValueKey
+#define ZwSetValueKey NtSetValueKey
 #define ZwRenameKey NtRenameKey
 #define ZwCreateSection NtCreateSection
 #define ZwMapViewOfSection NtMapViewOfSection

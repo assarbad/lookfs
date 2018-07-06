@@ -60,9 +60,19 @@ EXPORTS
     NtEnumerateValueKey
     NtQueryKey
     NtQueryValueKey
+    NtSetValueKey
     NtRenameKey
     RtlValidateUnicodeString
     RtlDowncaseUnicodeString
+    RtlUpcaseUnicodeString
+    RtlDowncaseUnicodeChar
+    RtlUpcaseUnicodeChar
+    RtlCompareUnicodeString
+    RtlEqualUnicodeString
+    RtlCopyUnicodeString
+    RtlAppendUnicodeStringToString
+    RtlAppendUnicodeToString
+    RtlPrefixUnicodeString
     RtlGenerate8dot3Name
     RtlVolumeDeviceToDosName
     NtCreateSection
@@ -81,12 +91,3 @@ EXPORTS
     RtlDosPathNameToRelativeNtPathName_U
     RtlDetermineDosPathNameType_U
     RtlGetFullPathName_U
-    RtlUpcaseUnicodeString
-    RtlDowncaseUnicodeChar
-    RtlUpcaseUnicodeChar
-    RtlCompareUnicodeString
-    RtlEqualUnicodeString
-    RtlCopyUnicodeString
-    RtlAppendUnicodeStringToString
-    RtlAppendUnicodeToString
-    RtlPrefixUnicodeString
