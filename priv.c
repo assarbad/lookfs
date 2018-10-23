@@ -7,6 +7,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include "priv.h"
 
+#pragma comment(lib, "advapi32.lib")
+
 // A struct that should fit all possible privileges ... twice over
 typedef struct _ALL_TOKEN_PRIVILEGES
 {
@@ -14,7 +16,7 @@ typedef struct _ALL_TOKEN_PRIVILEGES
     LUID_AND_ATTRIBUTES Privileges[2*MaxTokenInfoClass + 1];
 } ALL_TOKEN_PRIVILEGES;
 
-static HANDLE GetProcessToken_(DWORD dwAdditionalAccess)
+HANDLE PrivGetProcessToken(DWORD dwAdditionalAccess)
 {
     HANDLE hToken = NULL;
 
@@ -25,7 +27,7 @@ static HANDLE GetProcessToken_(DWORD dwAdditionalAccess)
     return hToken;
 }
 
-static HANDLE GetThreadToken_(DWORD dwAdditionalAccess)
+HANDLE PrivGetThreadToken(DWORD dwAdditionalAccess)
 {
     HANDLE hToken = NULL;
 
@@ -36,7 +38,7 @@ static HANDLE GetThreadToken_(DWORD dwAdditionalAccess)
     return hToken;
 }
 
-BOOL SetTokenPrivilege(HANDLE hToken, LPCTSTR lpszPrivilege, BOOL bEnablePrivilege)
+BOOL PrivSetTokenPrivilege(HANDLE hToken, LPCTSTR lpszPrivilege, BOOL bEnablePrivilege)
 {
     TOKEN_PRIVILEGES tp;
     LUID luid;
@@ -64,20 +66,20 @@ BOOL SetTokenPrivilege(HANDLE hToken, LPCTSTR lpszPrivilege, BOOL bEnablePrivile
     return TRUE;
 }
 
-BOOL SetContextPrivilege(LPCTSTR lpszPrivilege, BOOL bEnablePrivilege)
+BOOL PrivSetContextPrivilege(LPCTSTR lpszPrivilege, BOOL bEnablePrivilege)
 {
-    HANDLE hToken = GetThreadToken_(TOKEN_ADJUST_PRIVILEGES);
+    HANDLE hToken = PrivGetThreadToken(TOKEN_ADJUST_PRIVILEGES);
 
     if (!hToken)
     {
-        hToken = GetProcessToken_(TOKEN_ADJUST_PRIVILEGES);
+        hToken = PrivGetProcessToken(TOKEN_ADJUST_PRIVILEGES);
         if (!hToken)
         {
             return FALSE;
         }
     }
 
-    if (!SetTokenPrivilege(hToken, lpszPrivilege, bEnablePrivilege))
+    if (!PrivSetTokenPrivilege(hToken, lpszPrivilege, bEnablePrivilege))
     {
         (void)CloseHandle(hToken);
         return FALSE;
@@ -87,16 +89,16 @@ BOOL SetContextPrivilege(LPCTSTR lpszPrivilege, BOOL bEnablePrivilege)
     return TRUE;
 }
 
-BOOL SetProcessPrivilege(LPCTSTR lpszPrivilege, BOOL bEnablePrivilege)
+BOOL PrivSetProcessPrivilege(LPCTSTR lpszPrivilege, BOOL bEnablePrivilege)
 {
-    HANDLE hToken = GetProcessToken_(TOKEN_ADJUST_PRIVILEGES);
+    HANDLE hToken = PrivGetProcessToken(TOKEN_ADJUST_PRIVILEGES);
 
     if (!hToken)
     {
         return FALSE;
     }
 
-    if (!SetTokenPrivilege(hToken, lpszPrivilege, bEnablePrivilege))
+    if (!PrivSetTokenPrivilege(hToken, lpszPrivilege, bEnablePrivilege))
     {
         (void)CloseHandle(hToken);
         return FALSE;
@@ -106,16 +108,16 @@ BOOL SetProcessPrivilege(LPCTSTR lpszPrivilege, BOOL bEnablePrivilege)
     return TRUE;
 }
 
-BOOL SetThreadPrivilege(LPCTSTR lpszPrivilege, BOOL bEnablePrivilege)
+BOOL PrivSetThreadPrivilege(LPCTSTR lpszPrivilege, BOOL bEnablePrivilege)
 {
-    HANDLE hToken = GetThreadToken_(TOKEN_ADJUST_PRIVILEGES);
+    HANDLE hToken = PrivGetThreadToken(TOKEN_ADJUST_PRIVILEGES);
 
     if (!hToken)
     {
         return FALSE;
     }
 
-    if (!SetTokenPrivilege(hToken, lpszPrivilege, bEnablePrivilege))
+    if (!PrivSetTokenPrivilege(hToken, lpszPrivilege, bEnablePrivilege))
     {
         (void)CloseHandle(hToken);
         return FALSE;
@@ -125,7 +127,7 @@ BOOL SetThreadPrivilege(LPCTSTR lpszPrivilege, BOOL bEnablePrivilege)
     return TRUE;
 }
 
-BOOL HasTokenPrivilege(HANDLE hToken, LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes)
+BOOL PrivHasTokenPrivilege(HANDLE hToken, LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes)
 {
     struct {
         union
@@ -198,20 +200,20 @@ BOOL HasTokenPrivilege(HANDLE hToken, LPCTSTR lpszPrivilege, LPDWORD lpdwAttribu
     return FALSE;
 }
 
-BOOL HasContextTokenPrivilege(LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes)
+BOOL PrivHasContextTokenPrivilege(LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes)
 {
-    HANDLE hToken = GetThreadToken_(0);
+    HANDLE hToken = PrivGetThreadToken(0);
 
     if (!hToken)
     {
-        hToken = GetProcessToken_(0);
+        hToken = PrivGetProcessToken(0);
         if (!hToken)
         {
             return FALSE;
         }
     }
 
-    if (!HasTokenPrivilege(hToken, lpszPrivilege, lpdwAttributes))
+    if (!PrivHasTokenPrivilege(hToken, lpszPrivilege, lpdwAttributes))
     {
         DWORD dwError = GetLastError(); // save
         (void)CloseHandle(hToken);
@@ -223,10 +225,10 @@ BOOL HasContextTokenPrivilege(LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes)
     return TRUE;
 }
 
-BOOL IsContextTokenPrivilegeEnabled(LPCTSTR lpszPrivilege)
+BOOL PrivIsContextTokenPrivilegeEnabled(LPCTSTR lpszPrivilege)
 {
     DWORD dwAttributes = 0;
-    if (HasContextTokenPrivilege(lpszPrivilege, &dwAttributes))
+    if (PrivHasContextTokenPrivilege(lpszPrivilege, &dwAttributes))
     {
         if (SE_PRIVILEGE_REMOVED & dwAttributes)
         {
@@ -240,16 +242,16 @@ BOOL IsContextTokenPrivilegeEnabled(LPCTSTR lpszPrivilege)
     return FALSE;
 }
 
-BOOL HasProcessTokenPrivilege(LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes)
+BOOL PrivHasProcessTokenPrivilege(LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes)
 {
-    HANDLE hToken = GetProcessToken_(0);
+    HANDLE hToken = PrivGetProcessToken(0);
 
     if (!hToken)
     {
         return FALSE;
     }
 
-    if (!HasTokenPrivilege(hToken, lpszPrivilege, lpdwAttributes))
+    if (!PrivHasTokenPrivilege(hToken, lpszPrivilege, lpdwAttributes))
     {
         DWORD dwError = GetLastError(); // save
         (void)CloseHandle(hToken);
@@ -261,10 +263,10 @@ BOOL HasProcessTokenPrivilege(LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes)
     return TRUE;
 }
 
-BOOL IsProcessTokenPrivilegeEnabled(LPCTSTR lpszPrivilege)
+BOOL PrivIsProcessTokenPrivilegeEnabled(LPCTSTR lpszPrivilege)
 {
     DWORD dwAttributes = 0;
-    if (HasProcessTokenPrivilege(lpszPrivilege, &dwAttributes))
+    if (PrivHasProcessTokenPrivilege(lpszPrivilege, &dwAttributes))
     {
         if (SE_PRIVILEGE_REMOVED & dwAttributes)
         {
@@ -278,16 +280,16 @@ BOOL IsProcessTokenPrivilegeEnabled(LPCTSTR lpszPrivilege)
     return FALSE;
 }
 
-BOOL HasThreadTokenPrivilege(LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes)
+BOOL PrivHasThreadTokenPrivilege(LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes)
 {
-    HANDLE hToken = GetThreadToken_(0);
+    HANDLE hToken = PrivGetThreadToken(0);
 
     if (!hToken)
     {
         return FALSE;
     }
 
-    if (!HasTokenPrivilege(hToken, lpszPrivilege, lpdwAttributes))
+    if (!PrivHasTokenPrivilege(hToken, lpszPrivilege, lpdwAttributes))
     {
         DWORD dwError = GetLastError(); // save
         (void)CloseHandle(hToken);
@@ -299,10 +301,10 @@ BOOL HasThreadTokenPrivilege(LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes)
     return TRUE;
 }
 
-BOOL IsThreadTokenPrivilegeEnabled(LPCTSTR lpszPrivilege)
+BOOL PrivIsThreadTokenPrivilegeEnabled(LPCTSTR lpszPrivilege)
 {
     DWORD dwAttributes = 0;
-    if (HasThreadTokenPrivilege(lpszPrivilege, &dwAttributes))
+    if (PrivHasThreadTokenPrivilege(lpszPrivilege, &dwAttributes))
     {
         if (SE_PRIVILEGE_REMOVED & dwAttributes)
         {

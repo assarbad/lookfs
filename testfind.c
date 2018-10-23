@@ -14,16 +14,16 @@ int _tmain(int argc, _TCHAR** argv)
     BOOL bBackupPrivEnabled = FALSE;
     __try
     {
-        if (HasContextTokenPrivilege(SE_BACKUP_NAME, NULL))
+        if (PrivHasContextTokenPrivilege(SE_BACKUP_NAME, NULL))
         {
-            bBackupPrivEnabled = SetContextPrivilege(SE_BACKUP_NAME, TRUE);
+            bBackupPrivEnabled = PrivSetContextPrivilege(SE_BACKUP_NAME, TRUE);
         }
     }
     __finally
     {
         if (bBackupPrivEnabled)
         {
-            (void)SetContextPrivilege(SE_BACKUP_NAME, FALSE);
+            (void)PrivSetContextPrivilege(SE_BACKUP_NAME, FALSE);
         }
     }
     return 0;

@@ -6,7 +6,7 @@
 ///
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef __PRIV_H_VER__
-#define __PRIV_H_VER__ 2018031723
+#define __PRIV_H_VER__ 2018102318
 #if (defined(_MSC_VER) && (_MSC_VER >= 1020)) || defined(__MCPP)
 #pragma once
 #endif /* Check for "#pragma once" support */
@@ -15,17 +15,19 @@
 #include <winnt.h>
 #include <tchar.h>
 
-EXTERN_C BOOL SetTokenPrivilege(HANDLE hToken, LPCTSTR lpszPrivilege, BOOL bEnablePrivilege);
-EXTERN_C BOOL SetContextPrivilege(LPCTSTR lpszPrivilege, BOOL bEnablePrivilege);
-EXTERN_C BOOL SetProcessPrivilege(LPCTSTR lpszPrivilege, BOOL bEnablePrivilege);
-EXTERN_C BOOL SetThreadPrivilege(LPCTSTR lpszPrivilege, BOOL bEnablePrivilege);
-EXTERN_C BOOL HasTokenPrivilege(HANDLE hToken, LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes);
-EXTERN_C BOOL HasContextTokenPrivilege(LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes);
-EXTERN_C BOOL HasProcessTokenPrivilege(LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes);
-EXTERN_C BOOL HasThreadTokenPrivilege(LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes);
-EXTERN_C BOOL IsContextTokenPrivilegeEnabled(LPCTSTR lpszPrivilege);
-EXTERN_C BOOL IsProcessTokenPrivilegeEnabled(LPCTSTR lpszPrivilege);
-EXTERN_C BOOL IsThreadTokenPrivilegeEnabled(LPCTSTR lpszPrivilege);
+EXTERN_C HANDLE PrivGetProcessToken(DWORD dwAdditionalAccess);
+EXTERN_C HANDLE PrivGetThreadToken(DWORD dwAdditionalAccess);
+EXTERN_C BOOL PrivSetTokenPrivilege(HANDLE hToken, LPCTSTR lpszPrivilege, BOOL bEnablePrivilege);
+EXTERN_C BOOL PrivSetContextPrivilege(LPCTSTR lpszPrivilege, BOOL bEnablePrivilege);
+EXTERN_C BOOL PrivSetProcessPrivilege(LPCTSTR lpszPrivilege, BOOL bEnablePrivilege);
+EXTERN_C BOOL PrivSetThreadPrivilege(LPCTSTR lpszPrivilege, BOOL bEnablePrivilege);
+EXTERN_C BOOL PrivHasTokenPrivilege(HANDLE hToken, LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes);
+EXTERN_C BOOL PrivHasContextTokenPrivilege(LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes);
+EXTERN_C BOOL PrivHasProcessTokenPrivilege(LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes);
+EXTERN_C BOOL PrivHasThreadTokenPrivilege(LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes);
+EXTERN_C BOOL PrivIsContextTokenPrivilegeEnabled(LPCTSTR lpszPrivilege);
+EXTERN_C BOOL PrivIsProcessTokenPrivilegeEnabled(LPCTSTR lpszPrivilege);
+EXTERN_C BOOL PrivIsThreadTokenPrivilegeEnabled(LPCTSTR lpszPrivilege);
 
 #ifdef __cplusplus
 class CSnapEnableAssignedPrivilege
@@ -38,14 +40,14 @@ public:
         , m_bNoErrors(bNoErrors)
         , m_lpszPrivilege((lpszPrivilege) ? _tcsdup(lpszPrivilege) : NULL)
     {
-        if (HasContextTokenPrivilege(m_lpszPrivilege, NULL))
+        if (PrivHasContextTokenPrivilege(m_lpszPrivilege, NULL))
         {
-            m_bEnabled = SetContextPrivilege(m_lpszPrivilege, TRUE);
+            m_bEnabled = PrivSetContextPrivilege(m_lpszPrivilege, TRUE);
             if (!m_bEnabled)
             {
                 if (!m_bNoErrors)
                 {
-                    _tprintf(_T("Could not enable %s\n"), lpszPrivilege);
+                    _ftprintf(stderr, _T("Could not enable %s\n"), lpszPrivilege);
                 }
             }
         }
@@ -55,9 +57,29 @@ public:
     {
         if (m_bEnabled)
         {
-            (void)SetContextPrivilege(m_lpszPrivilege, FALSE);
+            (void)PrivSetContextPrivilege(m_lpszPrivilege, FALSE);
         }
         free(m_lpszPrivilege);
+    }
+
+    inline operator bool() const
+    {
+        return m_bEnabled != FALSE;
+    }
+
+    inline bool operator !() const
+    {
+        return m_bEnabled == FALSE;
+    }
+
+    operator LPCWSTR() const
+    {
+        return m_lpszPrivilege;
+    }
+
+    LPCWSTR getName() const
+    {
+        return m_lpszPrivilege;
     }
 private:
     CSnapEnableAssignedPrivilege(CSnapEnableAssignedPrivilege&);
