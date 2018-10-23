@@ -25,6 +25,7 @@ EXPORTS
     RtlInitString
     RtlInitAnsiString
     RtlInitUnicodeString
+    RtlCreateUnicodeString
     RtlAnsiStringToUnicodeString
     RtlUnicodeStringToAnsiString
     RtlUnicodeStringToOemString
@@ -61,6 +62,8 @@ EXPORTS
     NtQueryKey
     NtQueryValueKey
     NtSetValueKey
+    NtDeleteValueKey
+    NtQueryOpenSubKeys
     NtRenameKey
     RtlValidateUnicodeString
     RtlDowncaseUnicodeString
