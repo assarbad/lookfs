@@ -360,7 +360,7 @@ namespace
         CString m_sNormalizedPath;
         CString m_sDirectory; // always has a trailing backslash
         CString m_sSearchMask;
-        NT_FIND_DATA m_fd;
+        NTFIND_DATA m_fd;
         LONG m_lError;
         // hide these
         CPathFinder(CPathFinder&); // hide
@@ -443,7 +443,7 @@ namespace
             return FALSE != bRetVal;
         }
 
-        inline NT_FIND_DATA const& getFindData() const
+        inline NTFIND_DATA const& getFindData() const
         {
             return m_fd;
         }
@@ -655,7 +655,7 @@ namespace
             {
                 _tprintf(_T("%s\n"), path.GetString());
             }
-            NT_FIND_DATA const& fd = pathFinder.getFindData();
+            NTFIND_DATA const& fd = pathFinder.getFindData();
             if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
             {
                 // Don't follow reparse points in any case
