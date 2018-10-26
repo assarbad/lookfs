@@ -54,6 +54,11 @@ link. */
 #define SYMLINK_FLAG_RELATIVE 0x00000001
 #endif // SYMLINK_FLAG_RELATIVE
 
+namespace
+{
+    static const ULARGE_INTEGER uliZero = { 0 };
+}
+
 class CReparsePoint
 {
     // Allow the header to be included again outside of this file (and class)
@@ -104,9 +109,13 @@ public:
     CReparsePoint(WCHAR const* Path)
         : m_LastError(ERROR_SUCCESS)
         , m_Path(normalizePath_(Path))
+        , m_ReparseGuid(GUID_NULL)
         , m_Attr(::GetFileAttributesW(m_Path.getBuf()))
         , m_OpenFlags(FILE_FLAG_OPEN_REPARSE_POINT | ((m_Attr & FILE_ATTRIBUTE_DIRECTORY) ? FILE_FLAG_BACKUP_SEMANTICS : 0))
         , m_ReparseTag(0)
+#ifdef RP_QUERY_FILE_ID
+        , m_FileId(uliZero)
+#endif // RP_QUERY_FILE_ID
     {
         cacheValues_();
     }
@@ -240,7 +249,7 @@ private:
                     DWORD dwNeeded = ::GetCurrentDirectoryW(0, NULL);
                     if (dwNeeded)
                     {
-                        if (sPath.reAlloc(1 + dwNeeded + sPath.getCount()))
+                        if (sPath.reAlloc(1 + (size_t)dwNeeded + sPath.getCount()))
                         {
                             if (0 < ::GetCurrentDirectoryW(static_cast<DWORD>(sPath.getCount() - sPath.getCountZ()), sPath.getBuf() + sPath.getCountZ()))
                             {
@@ -253,7 +262,7 @@ private:
                 LPWSTR filePart = 0;
                 // dummy call to evaluate required length
                 DWORD dwNeeded = ::GetFullPathNameW(Path, 0, sPath.getBuf(), &filePart);
-                if (sPath.reAlloc(1 + dwNeeded + wcslen(Path)))
+                if (sPath.reAlloc(1 + (size_t)dwNeeded + wcslen(Path)))
                 {
                     if (0 < ::GetFullPathNameW(Path, static_cast<DWORD>(sPath.getCount() - sPath.getCountZ()), sPath.getBuf() + sPath.getCountZ(), &filePart))
                     {

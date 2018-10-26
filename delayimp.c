@@ -57,6 +57,8 @@ namespace
 }
 #endif // __cplusplus
 
+EXTERN_C NTSTATUS NTAPI FallbackRtlDosPathNameToNtPathName_U_WithStatus(PCWSTR DosFileName, PVOID NtFileName, PVOID *FilePart, PVOID RelativeName);
+
 static LONG WINAPI DelayLoadFilter(PEXCEPTION_POINTERS pExcPointers)
 {
     LONG lDisposition = EXCEPTION_EXECUTE_HANDLER;
@@ -120,6 +122,17 @@ static FARPROC WINAPI NtdllDliHook(unsigned dliNotify, PDelayLoadInfo pdli)
                 return (FARPROC)(hNtDll);
                 /*lint -restore */
             }
+        }
+        break; /* proceed with default processing  */
+    case dliNotePreGetProcAddress:
+        if (pdli->dlp.fImportByName && (0 == lstrcmpiA("RtlDosPathNameToNtPathName_U_WithStatus", pdli->dlp.szProcName)))
+        {
+            FARPROC func = GetProcAddress(pdli->hmodCur, pdli->dlp.szProcName);
+            if (!func)
+            {
+                func = (FARPROC)FallbackRtlDosPathNameToNtPathName_U_WithStatus;
+            }
+            return func;
         }
         break; /* proceed with default processing  */
     default:

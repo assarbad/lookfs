@@ -20,7 +20,10 @@
 #   include <stdio.h>
 #   include <tchar.h>
 #   define _TRACELVL -1
+#   if 0
 #   define _TRACE(x, fmt, ...) if (x <= _TRACELVL) do { _ftprintf(stderr, _T("[TRACE%d:%hs] "), _TRACELVL, __##FUNCTION##__); _ftprintf(stderr, _T(fmt), __VA_ARGS__); _ftprintf(stderr, _T("\n")); fflush(stderr); } while (0)
+#   endif /* 0 */
+#   define _TRACE(x, fmt, ...) do {} while (0)
 #else
 #   define _TRACE(x, fmt, ...) do {} while (0)
 #endif /* _DEBUG */
@@ -76,6 +79,10 @@ EXTERN_C ntFree_t NativeFindFree = NTFIND_FREE_FUNC;
 
 #define SetLastErrorFromNtError(x) SetLastError((LONG)pfnRtlNtStatusToDosError(x))
 
+#if defined(_DEBUG) || (defined(_MSC_VER) && (_MSC_VER <= 1400))
+#pragma warning(disable: 4127)
+#endif
+
 __declspec(thread) static ULONG s_uInitialBufSize = NTFIND_LARGE_BUFFER_SIZE;
 #ifdef _DEBUG
 __declspec(thread) static LONGLONG s_llMemoryAllocated = 0;
@@ -89,12 +96,17 @@ EXTERN_C LONGLONG NativeFindGetAllocatedBytes()
 #endif /* _DEBUG */
 
 /* Fallback function so we can simply call pfnRtlDosPathNameToNtPathName_U_WithStatus */
-FORCEINLINE static NTSTATUS NTAPI FallbackRtlDosPathNameToNtPathName_U_WithStatus(_In_ PCWSTR DosFileName, _Out_ PUNICODE_STRING NtFileName, _Out_opt_ PWSTR *FilePart, _Out_opt_ PRTL_RELATIVE_NAME RelativeName)
+#if defined(NTFINDFILE_DYNAMIC) && (NTFINDFILE_DYNAMIC)
+FORCEINLINE static
+#endif /* defined(NTFINDFILE_DYNAMIC) && (NTFINDFILE_DYNAMIC) */
+NTSTATUS NTAPI FallbackRtlDosPathNameToNtPathName_U_WithStatus(_In_ PCWSTR DosFileName, _Out_ PUNICODE_STRING NtFileName, _Out_opt_ PWSTR *FilePart, _Out_opt_ PRTL_RELATIVE_NAME RelativeName)
 {
+#if defined(NTFINDFILE_DYNAMIC) && (NTFINDFILE_DYNAMIC)
     if (!pfnRtlDosPathNameToNtPathName_U)
     {
         return STATUS_PROCEDURE_NOT_FOUND; /* STATUS_DELAY_LOAD_FAILED may also make sense here */
     }
+#endif /* defined(NTFINDFILE_DYNAMIC) && (NTFINDFILE_DYNAMIC) */
     _TRACE(3, "Fallback function");
     if (!pfnRtlDosPathNameToNtPathName_U(DosFileName, NtFileName, FilePart, RelativeName))
     {
@@ -154,6 +166,8 @@ EXTERN_C BOOLEAN NativeFindInit(_In_ ULONG cbInitialBuffer)
 #endif
 }
 
+
+
 _Success_(return != NULL)
 _Ret_writes_bytes_maybenull_(sizeof(NTFIND_HANDLE))
 _Post_writable_byte_size_(sizeof(NTFIND_HANDLE))
@@ -172,7 +186,7 @@ __inline static NTFIND_HANDLE* initFindHandle_(_In_ HANDLE hDirectory, _In_reads
         {
             InitializeCriticalSection(&pFindHandle->csFindHandle);
         }
-        __except (EXCEPTION_EXECUTE_HANDLER)
+        __except ((GetExceptionCode() != EXCEPTION_POSSIBLE_DEADLOCK) ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH)
         {
             SetLastErrorFromNtError(GetExceptionCode());
             (void)NativeFindFree(pFindHandle);
@@ -195,26 +209,25 @@ FORCEINLINE static BOOLEAN freeFindHandle_(_Frees_ptr_ NTFIND_HANDLE* pFindHandl
 {
     if (pFindHandle)
     {
-        if (TryEnterCriticalSection(&pFindHandle->csFindHandle))
+        EnterCriticalSection(&pFindHandle->csFindHandle);
+        if (pFindHandle->pucBuffer)
         {
-            if (pFindHandle->pucBuffer)
-            {
-                (void)NativeFindFree(pFindHandle->pucBuffer);
+            (void)NativeFindFree(pFindHandle->pucBuffer);
 #ifdef _DEBUG
-                s_llMemoryAllocated -= pFindHandle->cbBuffer;
+            s_llMemoryAllocated -= pFindHandle->cbBuffer;
 #endif /* _DEBUG */
-                pFindHandle->pucBuffer = NULL;
-            }
-            pFindHandle->cbBuffer = 0;
-            pFindHandle->pucNextEntry = NULL;
-            (void)pfnNtClose(pFindHandle->hDirectory);
-            pFindHandle->hDirectory = NULL;
-            DeleteCriticalSection(&pFindHandle->csFindHandle);
-#ifdef _DEBUG
-            s_llMemoryAllocated -= sizeof(*pFindHandle);
-#endif /* _DEBUG */
-            return NativeFindFree(pFindHandle) ? TRUE : FALSE;
+            pFindHandle->pucBuffer = NULL;
         }
+        pFindHandle->cbBuffer = 0;
+        pFindHandle->pucNextEntry = NULL;
+        (void)pfnNtClose(pFindHandle->hDirectory);
+        pFindHandle->hDirectory = NULL;
+        LeaveCriticalSection(&pFindHandle->csFindHandle);
+        DeleteCriticalSection(&pFindHandle->csFindHandle);
+#ifdef _DEBUG
+        s_llMemoryAllocated -= sizeof(*pFindHandle);
+#endif /* _DEBUG */
+        return NativeFindFree(pFindHandle) ? TRUE : FALSE;
     }
     return FALSE;
 }
@@ -233,7 +246,7 @@ FORCEINLINE static BOOLEAN increaseQueryBufferSizeAndZerofill_(_In_reads_bytes_(
             return FALSE; /* nothing for us to do */
         }
 
-        if (TryEnterCriticalSection(&pFindHandle->csFindHandle))
+        EnterCriticalSection(&pFindHandle->csFindHandle);
         {
             ULONG cbBuffer = 0;
             if (pFindHandle->pucBuffer && pFindHandle->cbBuffer)
@@ -331,7 +344,7 @@ FORCEINLINE static BOOLEAN increaseQueryBufferSizeAndZerofill_(_In_reads_bytes_(
 FORCEINLINE void wrapNtQueryDirectoryFile_(_Inout_updates_(sizeof(NTFIND_HANDLE)) NTFIND_HANDLE* pFindHandle)
 {
     NTSTATUS ntStatus;
-    BOOLEAN bFirstScan = (NULL == pFindHandle->pucBuffer);
+    BOOLEAN bFirstScan = (BOOLEAN)(NULL == pFindHandle->pucBuffer);
     PUNICODE_STRING pusFileMask = (bFirstScan) ? &pFindHandle->usPartName : NULL;
 
     if (bFirstScan)
@@ -354,6 +367,12 @@ FORCEINLINE void wrapNtQueryDirectoryFile_(_Inout_updates_(sizeof(NTFIND_HANDLE)
         }
         /* zero-fill what had previously been written */
         memset(pFindHandle->pucBuffer, 0, cbFilled);
+    }
+
+    if (!pFindHandle->pucBuffer || !pFindHandle->cbBuffer)
+    {
+        pFindHandle->ntStatus = STATUS_NO_MEMORY;
+        return;
     }
 
     ntStatus = pFindHandle->ntStatus = pfnNtQueryDirectoryFile(
@@ -727,7 +746,7 @@ EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCWSTR lpszPathName, _Out_wri
     }
 
     /* Attempt to open the given path */
-    ntStatus = openDirectoryForSearch_(&hDirectory, NULL, lpszPathName, &usNtPathName, &usPartName, 0 != (dwFlags & NTFIND_CASE_SENSITIVE));
+    ntStatus = openDirectoryForSearch_(&hDirectory, NULL, lpszPathName, &usNtPathName, &usPartName, (BOOLEAN)(0 != (dwFlags & NTFIND_CASE_SENSITIVE)));
 
     if (!NT_SUCCESS(ntStatus))
     {
@@ -773,7 +792,7 @@ EXTERN_C BOOL WINAPI NativeFindNextFile(_In_ HANDLE hFindFile, _Out_writes_bytes
         SetLastError(ERROR_INVALID_HANDLE);
         return bRetVal;
     }
-    if (TryEnterCriticalSection(&pFindHandle->csFindHandle))
+    EnterCriticalSection(&pFindHandle->csFindHandle);
     __try
     {
         NTFIND_DIR_INFO* dirinfo = getNextDirInfoEntry_(pFindHandle);
@@ -807,18 +826,13 @@ EXTERN_C BOOL NativeFindClose(_Frees_ptr_ HANDLE hFindFile)
     __try
     {
         NTFIND_HANDLE* pFindHandle = (NTFIND_HANDLE*)hFindFile;
-        if (TryEnterCriticalSection(&pFindHandle->csFindHandle))
-        {
-            LeaveCriticalSection(&pFindHandle->csFindHandle);
-            return freeFindHandle_(pFindHandle);
-        }
+        return freeFindHandle_(pFindHandle);
     }
     __except (EXCEPTION_EXECUTE_HANDLER)
     {
         SetLastErrorFromNtError(GetExceptionCode());
         return FALSE;
     }
-    return FALSE;
 }
 
 EXTERN_C NTSTATUS WINAPI NativeFindLastStatus(_In_ HANDLE hFindFile)
@@ -847,7 +861,7 @@ __inline static NTSTATUS recurseIntoDirectory_(_In_opt_ HANDLE hParentDir, _In_ 
     NTFIND_DIR_INFO* dirinfo;
 
     /* attempt to open the given path */
-    ntStatus = openDirectoryForSearch_(&hCurrentDir, hParentDir, wctx->cbctx.lpszPathName, &usNtPathName, &usPartName, 0 != (wctx->cbctx.dwFlags & NTFIND_CASE_SENSITIVE));
+    ntStatus = openDirectoryForSearch_(&hCurrentDir, hParentDir, wctx->cbctx.lpszPathName, &usNtPathName, &usPartName, (BOOLEAN)(0 != (wctx->cbctx.dwFlags & NTFIND_CASE_SENSITIVE)));
 
     if (!NT_SUCCESS(ntStatus))
     {

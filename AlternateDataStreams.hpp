@@ -224,7 +224,7 @@ private:
                     DWORD dwNeeded = ::GetCurrentDirectoryW(0, NULL);
                     if(dwNeeded)
                     {
-                        if(sPath.reAlloc(1 + dwNeeded + sPath.getCount()))
+                        if(sPath.reAlloc(1 + (size_t)dwNeeded + sPath.getCount()))
                         {
                             if(0 < ::GetCurrentDirectoryW(static_cast<DWORD>(sPath.getCount() - sPath.getCountZ()), sPath.getBuf() + sPath.getCountZ()))
                             {
@@ -237,7 +237,7 @@ private:
                 LPWSTR filePart = 0;
                 // dummy call to evaluate required length
                 DWORD dwNeeded = ::GetFullPathNameW(Path, 0, sPath.getBuf(), &filePart);
-                if(sPath.reAlloc(1 + dwNeeded + wcslen(Path)))
+                if(sPath.reAlloc(1 + (size_t)dwNeeded + wcslen(Path)))
                 {
                     if(0 < ::GetFullPathNameW(Path, static_cast<DWORD>(sPath.getCount() - sPath.getCountZ()), sPath.getBuf() + sPath.getCountZ(), &filePart))
                     {

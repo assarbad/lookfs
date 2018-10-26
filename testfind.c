@@ -12,6 +12,10 @@
 int _tmain(int argc, _TCHAR** argv)
 {
     BOOL bBackupPrivEnabled = FALSE;
+
+    UNREFERENCED_PARAMETER(argc);
+    UNREFERENCED_PARAMETER(argv);
+
     __try
     {
         if (PrivHasContextTokenPrivilege(SE_BACKUP_NAME, NULL))

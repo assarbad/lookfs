@@ -344,13 +344,26 @@ public:
     }
 
     /*! @brief Initialize the class in preparation for use. */
+#pragma warning(suppress: 26495)
     CSimpleOptTempl(
         int             argc, 
         SOCHAR *        argv[], 
         const SOption * a_rgOptions, 
         int             a_nFlags = 0
         ) 
-        : m_rgShuffleBuf(NULL) 
+        : m_rgOptions(NULL)
+        , m_nFlags(0)
+        , m_nOptionIdx(-1)
+        , m_nOptionId(-1)
+        , m_nNextOption(-1)
+        , m_nLastArg(-1)
+        , m_argc(-1)
+        , m_argv(NULL)
+        , m_pszOptionText(NULL)
+        , m_pszOptionArg(NULL)
+        , m_pszClump(NULL)
+        , m_nLastError(SO_ARG_INVALID_DATA)
+        , m_rgShuffleBuf(NULL)
     { 
         Init(argc, argv, a_rgOptions, a_nFlags); 
     }

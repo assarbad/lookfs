@@ -506,7 +506,7 @@ namespace
         {
             // Replace forward slashes by backward slashes
             m_sNormalizedPath.TrimRight(_T("\\/"));
-            for (size_t i = 0; i < _tcslen(m_sNormalizedPath); i++)
+            for (int i = 0; i < m_sNormalizedPath.GetLength(); i++)
             {
                 if (m_sNormalizedPath.GetAt(i) == _T('/'))
                 {
@@ -561,7 +561,7 @@ namespace
             if ((INVALID_FILE_ATTRIBUTES != dwAttr) && (FILE_ATTRIBUTE_DIRECTORY & dwAttr))
             {
                 m_sDirectory = m_sNormalizedPath;
-                if (m_sDirectory.GetAt(_tcslen(m_sDirectory) - 1) != _T('\\'))
+                if (m_sDirectory.GetAt(m_sDirectory.GetLength() - 1) != _T('\\'))
                 {
                     m_sDirectory.AppendChar(_T('\\'));
                 }
