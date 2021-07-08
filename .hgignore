@@ -28,3 +28,4 @@ buildlog.html
 *.vlconfig
 .vs/**
 fstest/**
+.git/
