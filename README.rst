@@ -1,7 +1,5 @@
-﻿====================================
- ``CReparsePoint`` and ``lookfs``
+﻿ ``CReparsePoint`` and ``lookfs``
 ====================================
-:Author: Oliver Schneider
 
 About
 -----
@@ -16,7 +14,7 @@ points and alternate data streams the command line.
 
 Installation
 ------------
-No installation required. Download the binaries (32 and 64bit) from `Bitbucket`_.
+No installation required. Download the binaries (32 and 64bit) from `SourceForge`_.
 Use an archiver to unpack the archive, I recommend `7-Zip`_, and then place the
 ``.exe`` files into a folder listed in your ``PATH`` environment variable.
 
@@ -84,6 +82,6 @@ the very liberal MIT license. Licensing information can usually be found at the
 top of each source file. Anything not explicitly licensed in the source file can
 be assumed to have been placed into the PUBLIC DOMAIN/CC0.
 
-.. _premake4: https://bitbucket.org/windirstat/premake-stable/downloads/
-.. _Bitbucket: https://bitbucket.org/assarbad/lookfs/downloads/
-.. _7-Zip: http://7-zip.org/
+.. _premake4: https://sourceforge.net/projects/premake4-wds/files/
+.. _SourceForge: https://sourceforge.net/projects/lookfs/files/
+.. _7-Zip: https://7-zip.org/
