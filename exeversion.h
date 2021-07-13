@@ -37,7 +37,7 @@
 #define TEXT_COPYRIGHT         Written EXE_YEAR by TEXT_COMPANY (PUBLIC DOMAIN/CC0)
 #define TEXT_PORTIONSCOPYRIGHT Portions Copyright (c) 2006-2013, Brodie Thiesfield
 #define TEXT_INTERNALNAME      lookfs.exe
-#define HG_REPOSITORY          "https://assarbad@hg.code.sf.net/p/lookfs/code"
+#define HG_REPOSITORY          "https://hg.code.sf.net/p/lookfs/code"
 
 
 #define _ANSISTRING(text) #text
