@@ -1,17 +1,124 @@
-#pragma warning(disable: 4005)
+// clang-format off
+
 #ifndef _WIN32_WINNT
 #   define _WIN32_WINNT 0x0500
 #endif
 #ifndef WINVER
 #   define WINVER 0x0500
 #endif
-#if (_MSCVER >= 1400)
-#   define _NTDLLBUILD_
-#   define _NTSYSTEM_
-#endif
 #include <Windows.h>
-#include "../ntnative.h"
-#pragma warning(default: 4005)
+
+// Fake the SAL1 annotations where they don't exist.
+#if !defined(__in_bcount) && !defined(_In_reads_bytes_)
+#   define __success(x)
+#   define __field_range(x, y)
+#   define __field_nullterminated
+#   define __in
+#   define __in_z
+#   define __in_bcount(x)
+#   define __in_opt
+#   define __inout
+#   define __inout_opt
+#   define __out
+#   define __out_bcount(x)
+#   define __out_opt
+#   define __out_bcount_opt(x)
+#   define __reserved
+#endif
+
+// Fake the SAL2 annotations where they don't exist.
+#if defined(__in_bcount) && !defined(_In_reads_bytes_)
+#   define _Success_(x) __success(x)
+#   define _Field_range_(x, y) __field_range(x, y)
+#   define _Field_z_ __field_nullterminated
+#   define _In_ __in
+#   define _In_z_ __in_z
+#   define _In_reads_bytes_(x) __in_bcount(x)
+#   define _In_opt_ __in_opt
+#   define _Inout_ __inout
+#   define _Inout_opt_ __inout_opt
+#   define _Out_ __out
+#   define _Out_writes_bytes_(x) __out_bcount(x)
+#   define _Out_opt_ __out_opt
+#   define _Out_writes_bytes_opt_(x) __out_bcount_opt(x)
+#   define _Reserved_ __reserved
+#endif
+
+#ifndef _Must_inspect_result_
+#   define _Must_inspect_result_
+#endif
+
+#ifndef _Ret_maybenull_
+#   define _Ret_maybenull_
+#endif
+
+#ifndef _Ret_writes_bytes_maybenull_
+#   define _Ret_writes_bytes_maybenull_(Size)
+#endif
+
+#ifndef _Post_writable_byte_size_
+#   define _Post_writable_byte_size_(Size)
+#endif
+
+#ifndef _Post_invalid_
+#   define _Post_invalid_
+#endif
+
+#ifndef _When_
+#   define _When_(x, y)
+#endif
+
+#ifndef _Out_range_
+#   define _Out_range_(x, y)
+#endif
+
+#ifndef _Frees_ptr_opt_
+#   define _Frees_ptr_opt_
+#endif
+
+#ifndef _Frees_ptr_
+#   define _Frees_ptr_
+#endif
+
+#ifndef _Inout_updates_opt_
+#   define _Inout_updates_opt_(x)
+#endif
+
+#ifndef _Inout_updates_
+#   define _Inout_updates_(x)
+#endif
+
+typedef struct OBJECT_ATTRIBUTES* POBJECT_ATTRIBUTES;
+typedef struct IO_STATUS_BLOCK* PIO_STATUS_BLOCK;
+typedef struct ANSI_STRING *PANSI_STRING;
+typedef struct ANSI_STRING const* PCANSI_STRING;
+typedef struct UNICODE_STRING* PUNICODE_STRING;
+typedef struct UNICODE_STRING const* PCUNICODE_STRING;
+typedef struct OEM_STRING *POEM_STRING;
+typedef struct OEM_STRING const* PCOEM_STRING;
+typedef struct STRING* PSTRING;
+typedef LPCSTR PCSZ;
+typedef FARPROC PIO_APC_ROUTINE;
+typedef struct RTL_RELATIVE_NAME* PRTL_RELATIVE_NAME;
+typedef struct GENERATE_NAME_CONTEXT* PGENERATE_NAME_CONTEXT;
+typedef int NT_FILE_INFORMATION_CLASS; // enum
+typedef int RTL_PATH_TYPE; // enum
+typedef int FILE_INFORMATION_CLASS; // enum
+typedef int THREADINFOCLASS; // enum
+typedef int PROCESSINFOCLASS; // enum
+typedef int OBJECT_INFORMATION_CLASS; // enum
+typedef int SYSTEM_INFORMATION_CLASS; // enum
+typedef int EVENT_INFORMATION_CLASS; // enum
+typedef int IO_COMPLETION_INFORMATION_CLASS; // enum
+typedef int MUTANT_INFORMATION_CLASS; // enum
+typedef int SEMAPHORE_INFORMATION_CLASS; // enum
+typedef int SECTION_INFORMATION_CLASS; // enum
+typedef int TIMER_INFORMATION_CLASS; // enum
+typedef int KEY_INFORMATION_CLASS; // enum
+typedef int KEY_VALUE_INFORMATION_CLASS; // enum
+typedef int KEY_INFORMATION_CLASS; // enum
+typedef int KEY_VALUE_INFORMATION_CLASS; // enum
+typedef ULONG SECTION_INHERIT;
 
 NTSTATUS
 NTAPI
@@ -796,3 +903,5 @@ RtlGetFullPathName_U(
     _Out_writes_bytes_(BufferLength) PWSTR Buffer,
     _Out_opt_ PWSTR *FilePart
     ) { return 0; }
+
+// clang-format on

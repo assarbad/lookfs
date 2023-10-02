@@ -21,7 +21,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="bin"
-			IntermediateDirectory="intermediate\vs2005_$(PlatformName)_$(ConfigurationName)\$(ProjectName)"
+			IntermediateDirectory="obj\x32\Debug\lookfs"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -69,7 +69,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/delay:nobind /delayload:ntdll-delayed.dll /delayload:version.dll"
+				AdditionalOptions="/delay:nobind /delayload:ntdll.dld /delayload:version.dll"
 				AdditionalDependencies="ntdll-delayed.lib version.lib"
 				OutputFile="$(OutDir)\lookfs32D.exe"
 				LinkIncremental="2"
@@ -107,7 +107,7 @@
 		<Configuration
 			Name="Debug|x64"
 			OutputDirectory="bin"
-			IntermediateDirectory="intermediate\vs2005_$(PlatformName)_$(ConfigurationName)\$(ProjectName)"
+			IntermediateDirectory="obj\x64\Debug\lookfs"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -156,7 +156,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/delay:nobind /delayload:ntdll-delayed.dll /delayload:version.dll"
+				AdditionalOptions="/delay:nobind /delayload:ntdll.dld /delayload:version.dll"
 				AdditionalDependencies="ntdll-delayed.lib version.lib"
 				OutputFile="$(OutDir)\lookfs64D.exe"
 				LinkIncremental="2"
@@ -194,7 +194,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="bin"
-			IntermediateDirectory="intermediate\vs2005_$(PlatformName)_$(ConfigurationName)\$(ProjectName)"
+			IntermediateDirectory="obj\x32\Release\lookfs"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -242,7 +242,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/delay:nobind /delayload:ntdll-delayed.dll /delayload:version.dll /release /subsystem:console,5.00 /opt:nowin98"
+				AdditionalOptions="/delay:nobind /delayload:ntdll.dld /delayload:version.dll /release /subsystem:console,5.00 /opt:nowin98"
 				AdditionalDependencies="ntdll-delayed.lib version.lib"
 				OutputFile="$(OutDir)\lookfs32.exe"
 				LinkIncremental="1"
@@ -282,7 +282,7 @@
 		<Configuration
 			Name="Release|x64"
 			OutputDirectory="bin"
-			IntermediateDirectory="intermediate\vs2005_$(PlatformName)_$(ConfigurationName)\$(ProjectName)"
+			IntermediateDirectory="obj\x64\Release\lookfs"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -331,7 +331,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/delay:nobind /delayload:ntdll-delayed.dll /delayload:version.dll /release /subsystem:console,5.02 /opt:nowin98"
+				AdditionalOptions="/delay:nobind /delayload:ntdll.dld /delayload:version.dll /release /subsystem:console,5.02 /opt:nowin98"
 				AdditionalDependencies="ntdll-delayed.lib version.lib"
 				OutputFile="$(OutDir)\lookfs64.exe"
 				LinkIncremental="1"
@@ -372,6 +372,18 @@
 	<References>
 	</References>
 	<Files>
+		<File
+			RelativePath=".editorconfig"
+			>
+		</File>
+		<File
+			RelativePath=".gitignore"
+			>
+		</File>
+		<File
+			RelativePath="Directory.Build.props"
+			>
+		</File>
 		<Filter
 			Name="Header Files"
 			Filter=""
@@ -435,18 +447,13 @@
 			</Filter>
 		</Filter>
 		<Filter
-			Name="Resource Files"
-			Filter=""
-			>
-			<File
-				RelativePath="exeversion.rc"
-				>
-			</File>
-		</Filter>
-		<Filter
 			Name="Source Files"
 			Filter=""
 			>
+			<File
+				RelativePath=".clang-format"
+				>
+			</File>
 			<File
 				RelativePath="delayimp.c"
 				>
@@ -598,6 +605,14 @@
 				>
 			</File>
 		</Filter>
+		<File
+			RelativePath="project.early.props"
+			>
+		</File>
+		<File
+			RelativePath="project.late.props"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

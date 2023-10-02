@@ -21,7 +21,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="bin"
-			IntermediateDirectory="intermediate\vs2005_$(PlatformName)_$(ConfigurationName)\$(ProjectName)"
+			IntermediateDirectory="obj\x32\Debug\testfind"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -69,7 +69,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/delay:nobind /delayload:ntdll-delayed.dll"
+				AdditionalOptions="/delay:nobind /delayload:ntdll.dld"
 				AdditionalDependencies="ntdll-delayed.lib"
 				OutputFile="$(OutDir)\testfind32D.exe"
 				LinkIncremental="2"
@@ -106,7 +106,7 @@
 		<Configuration
 			Name="Debug|x64"
 			OutputDirectory="bin"
-			IntermediateDirectory="intermediate\vs2005_$(PlatformName)_$(ConfigurationName)\$(ProjectName)"
+			IntermediateDirectory="obj\x64\Debug\testfind"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -155,7 +155,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/delay:nobind /delayload:ntdll-delayed.dll"
+				AdditionalOptions="/delay:nobind /delayload:ntdll.dld"
 				AdditionalDependencies="ntdll-delayed.lib"
 				OutputFile="$(OutDir)\testfind64D.exe"
 				LinkIncremental="2"
@@ -192,7 +192,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="bin"
-			IntermediateDirectory="intermediate\vs2005_$(PlatformName)_$(ConfigurationName)\$(ProjectName)"
+			IntermediateDirectory="obj\x32\Release\testfind"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -240,7 +240,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/delay:nobind /delayload:ntdll-delayed.dll /release /subsystem:console,5.00 /opt:nowin98"
+				AdditionalOptions="/delay:nobind /delayload:ntdll.dld /release /subsystem:console,5.00 /opt:nowin98"
 				AdditionalDependencies="ntdll-delayed.lib"
 				OutputFile="$(OutDir)\testfind32.exe"
 				LinkIncremental="1"
@@ -279,7 +279,7 @@
 		<Configuration
 			Name="Release|x64"
 			OutputDirectory="bin"
-			IntermediateDirectory="intermediate\vs2005_$(PlatformName)_$(ConfigurationName)\$(ProjectName)"
+			IntermediateDirectory="obj\x64\Release\testfind"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -328,7 +328,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/delay:nobind /delayload:ntdll-delayed.dll /release /subsystem:console,5.02 /opt:nowin98"
+				AdditionalOptions="/delay:nobind /delayload:ntdll.dld /release /subsystem:console,5.02 /opt:nowin98"
 				AdditionalDependencies="ntdll-delayed.lib"
 				OutputFile="$(OutDir)\testfind64.exe"
 				LinkIncremental="1"

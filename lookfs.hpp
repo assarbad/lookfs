@@ -14,9 +14,8 @@
 #define __LOOKFS_H_VER__ 2017091518
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
-#pragma once
+#    pragma once
 #endif
-
 
 #include "exeversion.h"
 #include <Windows.h>

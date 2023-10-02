@@ -7,25 +7,39 @@
  ***
  ******************************************************************************/
 #ifdef NTFINDFILE_DYNAMIC
-#   ifdef DYNAMIC_NTNATIVE
-#       error DYNAMIC_NTNATIVE should _NOT_ be defined if NTFINDFILE_DYNAMIC is defined
-#   endif /* DYNAMIC_NTNATIVE */
-#   define DYNAMIC_NTNATIVE NTFINDFILE_DYNAMIC
+#    ifdef DYNAMIC_NTNATIVE
+#        error DYNAMIC_NTNATIVE should _NOT_ be defined if NTFINDFILE_DYNAMIC is defined
+#    endif /* DYNAMIC_NTNATIVE */
+#    define DYNAMIC_NTNATIVE NTFINDFILE_DYNAMIC
 #endif /* NTFINDFILE_DYNAMIC */
 #include "ntfindfile.h"
 #ifdef NTFIND_USE_CRTALLOC
-#include <stdlib.h>
+#    include <stdlib.h>
 #endif /* NTFIND_USE_CRTALLOC */
 #ifdef _DEBUG
-#   include <stdio.h>
-#   include <tchar.h>
-#   define _TRACELVL -1
-#   if 0
-#   define _TRACE(x, fmt, ...) if (x <= _TRACELVL) do { _ftprintf(stderr, _T("[TRACE%d:%hs] "), _TRACELVL, __##FUNCTION##__); _ftprintf(stderr, _T(fmt), __VA_ARGS__); _ftprintf(stderr, _T("\n")); fflush(stderr); } while (0)
-#   endif /* 0 */
-#   define _TRACE(x, fmt, ...) do {} while (0)
+#    include <stdio.h>
+#    include <tchar.h>
+#    define _TRACELVL -1
+#    if 0
+#        define _TRACE(x, fmt, ...)                                                       \
+            if (x <= _TRACELVL)                                                           \
+                do                                                                        \
+                {                                                                         \
+                    _ftprintf(stderr, _T("[TRACE%d:%hs] "), _TRACELVL, __##FUNCTION##__); \
+                    _ftprintf(stderr, _T(fmt), __VA_ARGS__);                              \
+                    _ftprintf(stderr, _T("\n"));                                          \
+                    fflush(stderr);                                                       \
+            } while (0)
+#    endif /* 0 */
+#    define _TRACE(x, fmt, ...) \
+        do                      \
+        {                       \
+        } while (0)
 #else
-#   define _TRACE(x, fmt, ...) do {} while (0)
+#    define _TRACE(x, fmt, ...) \
+        do                      \
+        {                       \
+        } while (0)
 #endif /* _DEBUG */
 
 #define FILE_ATTRIBUTE_REPARSE_DIR (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY)
@@ -41,38 +55,40 @@ __declspec(thread) static RtlInitUnicodeString_t pfnRtlInitUnicodeString = NULL;
 __declspec(thread) static RtlCreateUnicodeString_t pfnRtlCreateUnicodeString = NULL;
 __declspec(thread) static RtlNtStatusToDosError_t pfnRtlNtStatusToDosError = NULL;
 #else
-#define pfnNtOpenFile NtOpenFile
-#define pfnNtClose NtClose
-#define pfnNtQueryDirectoryFile NtQueryDirectoryFile
-#define pfnRtlDosPathNameToNtPathName_U RtlDosPathNameToNtPathName_U
-#define pfnRtlDosPathNameToNtPathName_U_WithStatus RtlDosPathNameToNtPathName_U_WithStatus
-#define pfnRtlFreeUnicodeString RtlFreeUnicodeString
-#define pfnRtlInitUnicodeString RtlInitUnicodeString
-#define pfnRtlCreateUnicodeString RtlCreateUnicodeString
-#define pfnRtlNtStatusToDosError RtlNtStatusToDosError
+#    define pfnNtOpenFile                              NtOpenFile
+#    define pfnNtClose                                 NtClose
+#    define pfnNtQueryDirectoryFile                    NtQueryDirectoryFile
+#    define pfnRtlDosPathNameToNtPathName_U            RtlDosPathNameToNtPathName_U
+#    define pfnRtlDosPathNameToNtPathName_U_WithStatus RtlDosPathNameToNtPathName_U_WithStatus
+#    define pfnRtlFreeUnicodeString                    RtlFreeUnicodeString
+#    define pfnRtlInitUnicodeString                    RtlInitUnicodeString
+#    define pfnRtlCreateUnicodeString                  RtlCreateUnicodeString
+#    define pfnRtlNtStatusToDosError                   RtlNtStatusToDosError
 #endif
 
 #if !defined(NTFIND_ALLOC_FUNC) && !defined(NTFIND_FREE_FUNC)
 static LPVOID NTFIND_ALLOC_FUNC(SIZE_T Bytes)
 {
-#ifndef NTFIND_USE_CRTALLOC
+#    ifndef NTFIND_USE_CRTALLOC
     return HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, Bytes);
-#else
+#    else
     return calloc(Bytes, 1);
-#endif /* NTFIND_USE_CRTALLOC */
+#    endif /* NTFIND_USE_CRTALLOC */
 }
 
 static BOOL NTFIND_FREE_FUNC(LPVOID lpMem)
 {
-#ifndef NTFIND_USE_CRTALLOC
+#    ifndef NTFIND_USE_CRTALLOC
     return HeapFree(GetProcessHeap(), 0, lpMem);
-#else
+#    else
     free(lpMem);
     return TRUE;
-#endif /* NTFIND_USE_CRTALLOC */
+#    endif /* NTFIND_USE_CRTALLOC */
 }
 #endif
-#define NativeFindFreeAndNull(x) NativeFindFree(x); (x) = NULL
+#define NativeFindFreeAndNull(x) \
+    NativeFindFree(x);           \
+    (x) = NULL
 
 EXTERN_C ntAlloc_t NativeFindAlloc = NTFIND_ALLOC_FUNC;
 EXTERN_C ntFree_t NativeFindFree = NTFIND_FREE_FUNC;
@@ -80,7 +96,7 @@ EXTERN_C ntFree_t NativeFindFree = NTFIND_FREE_FUNC;
 #define SetLastErrorFromNtError(x) SetLastError((LONG)pfnRtlNtStatusToDosError(x))
 
 #if defined(_DEBUG) || (defined(_MSC_VER) && (_MSC_VER <= 1400))
-#pragma warning(disable: 4127)
+#    pragma warning(disable : 4127)
 #endif
 
 __declspec(thread) static ULONG s_uInitialBufSize = NTFIND_LARGE_BUFFER_SIZE;
@@ -99,7 +115,11 @@ EXTERN_C LONGLONG NativeFindGetAllocatedBytes()
 #if defined(NTFINDFILE_DYNAMIC) && (NTFINDFILE_DYNAMIC)
 FORCEINLINE static
 #endif /* defined(NTFINDFILE_DYNAMIC) && (NTFINDFILE_DYNAMIC) */
-NTSTATUS NTAPI FallbackRtlDosPathNameToNtPathName_U_WithStatus(_In_ PCWSTR DosFileName, _Out_ PUNICODE_STRING NtFileName, _Out_opt_ PWSTR *FilePart, _Out_opt_ PRTL_RELATIVE_NAME RelativeName)
+    NTSTATUS NTAPI
+    FallbackRtlDosPathNameToNtPathName_U_WithStatus(_In_ PCWSTR DosFileName,
+                                                    _Out_ PUNICODE_STRING NtFileName,
+                                                    _Out_opt_ PWSTR* FilePart,
+                                                    _Out_opt_ PRTL_RELATIVE_NAME RelativeName)
 {
 #if defined(NTFINDFILE_DYNAMIC) && (NTFINDFILE_DYNAMIC)
     if (!pfnRtlDosPathNameToNtPathName_U)
@@ -115,8 +135,7 @@ NTSTATUS NTAPI FallbackRtlDosPathNameToNtPathName_U_WithStatus(_In_ PCWSTR DosFi
     return STATUS_SUCCESS;
 }
 
-_Success_(return != FALSE)
-EXTERN_C BOOLEAN NativeFindInit(_In_ ULONG cbInitialBuffer)
+_Success_(return != FALSE) EXTERN_C BOOLEAN NativeFindInit(_In_ ULONG cbInitialBuffer)
 {
 #if defined(NTFINDFILE_DYNAMIC) && (NTFINDFILE_DYNAMIC)
     __declspec(thread) static HMODULE hNtDll = NULL;
@@ -131,7 +150,7 @@ EXTERN_C BOOLEAN NativeFindInit(_In_ ULONG cbInitialBuffer)
             SetLastError(ERROR_MOD_NOT_FOUND);
             return FALSE;
         }
-#define NTFIND_DEFFUNC(x) pfn##x = (x##_t)NTNATIVE_GETPROCADDR(hNtDll, x)
+#    define NTFIND_DEFFUNC(x) pfn##x = (x##_t)NTNATIVE_GETPROCADDR(hNtDll, x)
         NTFIND_DEFFUNC(NtOpenFile);
         NTFIND_DEFFUNC(NtClose);
         NTFIND_DEFFUNC(NtQueryDirectoryFile);
@@ -141,18 +160,14 @@ EXTERN_C BOOLEAN NativeFindInit(_In_ ULONG cbInitialBuffer)
         NTFIND_DEFFUNC(RtlInitUnicodeString);
         NTFIND_DEFFUNC(RtlCreateUnicodeString);
         NTFIND_DEFFUNC(RtlNtStatusToDosError);
-#undef NTFIND_DEFFUNC
+#    undef NTFIND_DEFFUNC
         if (!pfnRtlDosPathNameToNtPathName_U_WithStatus)
         {
             /* We have a fallback for that one */
             pfnRtlDosPathNameToNtPathName_U_WithStatus = FallbackRtlDosPathNameToNtPathName_U_WithStatus;
         }
-        if (
-            !pfnNtOpenFile || !pfnNtClose || !pfnNtQueryDirectoryFile
-            || !pfnRtlDosPathNameToNtPathName_U_WithStatus
-            || !pfnRtlFreeUnicodeString || !pfnRtlInitUnicodeString
-            || !pfnRtlNtStatusToDosError || !pfnRtlCreateUnicodeString
-            )
+        if (!pfnNtOpenFile || !pfnNtClose || !pfnNtQueryDirectoryFile || !pfnRtlDosPathNameToNtPathName_U_WithStatus || !pfnRtlFreeUnicodeString ||
+            !pfnRtlInitUnicodeString || !pfnRtlNtStatusToDosError || !pfnRtlCreateUnicodeString)
         {
             SetLastError(ERROR_INVALID_FUNCTION);
             hNtDll = NULL;
@@ -166,12 +181,13 @@ EXTERN_C BOOLEAN NativeFindInit(_In_ ULONG cbInitialBuffer)
 #endif
 }
 
-
-
-_Success_(return != NULL)
-_Ret_writes_bytes_maybenull_(sizeof(NTFIND_HANDLE))
-_Post_writable_byte_size_(sizeof(NTFIND_HANDLE))
-__inline static NTFIND_HANDLE* initFindHandle_(_In_ HANDLE hDirectory, _In_reads_bytes_(sizeof(UNICODE_STRING)) PCUNICODE_STRING pusNtPathName, _In_reads_bytes_(sizeof(UNICODE_STRING)) PCUNICODE_STRING pusPartName, ULONG dwFlags)
+_Success_(return != NULL) _Ret_writes_bytes_maybenull_(sizeof(NTFIND_HANDLE))
+    _Post_writable_byte_size_(sizeof(NTFIND_HANDLE)) __inline static NTFIND_HANDLE* initFindHandle_(_In_ HANDLE hDirectory,
+                                                                                                    _In_reads_bytes_(sizeof(UNICODE_STRING))
+                                                                                                        PCUNICODE_STRING pusNtPathName,
+                                                                                                    _In_reads_bytes_(sizeof(UNICODE_STRING))
+                                                                                                        PCUNICODE_STRING pusPartName,
+                                                                                                    ULONG dwFlags)
 {
     NTFIND_HANDLE* pFindHandle;
 
@@ -204,8 +220,7 @@ __inline static NTFIND_HANDLE* initFindHandle_(_In_ HANDLE hDirectory, _In_reads
     return pFindHandle;
 }
 
-_Success_(return != FALSE)
-FORCEINLINE static BOOLEAN freeFindHandle_(_Frees_ptr_ NTFIND_HANDLE* pFindHandle)
+_Success_(return != FALSE) FORCEINLINE static BOOLEAN freeFindHandle_(_Frees_ptr_ NTFIND_HANDLE* pFindHandle)
 {
     if (pFindHandle)
     {
@@ -234,8 +249,7 @@ FORCEINLINE static BOOLEAN freeFindHandle_(_Frees_ptr_ NTFIND_HANDLE* pFindHandl
 
 /* increases (currently doubles, up to a maximum) the size of the internal buffer */
 /* Return value of TRUE means the buffer size was increased, FALSE mean it has been kept intact */
-_Success_(return != FALSE)
-FORCEINLINE static BOOLEAN increaseQueryBufferSizeAndZerofill_(_In_reads_bytes_(sizeof(NTFIND_HANDLE)) NTFIND_HANDLE* pFindHandle)
+_Success_(return != FALSE) FORCEINLINE static BOOLEAN increaseQueryBufferSizeAndZerofill_(_In_reads_bytes_(sizeof(NTFIND_HANDLE)) NTFIND_HANDLE* pFindHandle)
 {
     if (pFindHandle)
     {
@@ -375,20 +389,24 @@ FORCEINLINE void wrapNtQueryDirectoryFile_(_Inout_updates_(sizeof(NTFIND_HANDLE)
         return;
     }
 
-    ntStatus = pFindHandle->ntStatus = pfnNtQueryDirectoryFile(
-        pFindHandle->hDirectory,
-        NULL,
-        NULL,
-        NULL,
-        &pFindHandle->iostat_NtQueryDirectoryFile,
-        pFindHandle->pucBuffer,
-        pFindHandle->cbBuffer,
-        NtFindInfoClass,
-        FALSE, /* ReturnSingleEntry */
-        pusFileMask,
-        bFirstScan /* RestartScan */
+    ntStatus = pFindHandle->ntStatus = pfnNtQueryDirectoryFile(pFindHandle->hDirectory,
+                                                               NULL,
+                                                               NULL,
+                                                               NULL,
+                                                               &pFindHandle->iostat_NtQueryDirectoryFile,
+                                                               pFindHandle->pucBuffer,
+                                                               pFindHandle->cbBuffer,
+                                                               NtFindInfoClass,
+                                                               FALSE, /* ReturnSingleEntry */
+                                                               pusFileMask,
+                                                               bFirstScan /* RestartScan */
     );
-    _TRACE(2, "NtQueryDirectoryFile(): 0x%08X [restart = %d, bufsz = %u, 0x%08X]", ntStatus, bFirstScan, pFindHandle->cbBuffer, pFindHandle->iostat_NtQueryDirectoryFile.Status);
+    _TRACE(2,
+           "NtQueryDirectoryFile(): 0x%08X [restart = %d, bufsz = %u, 0x%08X]",
+           ntStatus,
+           bFirstScan,
+           pFindHandle->cbBuffer,
+           pFindHandle->iostat_NtQueryDirectoryFile.Status);
 
     while ((STATUS_BUFFER_OVERFLOW == ntStatus) || (STATUS_BUFFER_TOO_SMALL == ntStatus) || (STATUS_SUCCESS == ntStatus))
     {
@@ -411,24 +429,32 @@ FORCEINLINE void wrapNtQueryDirectoryFile_(_Inout_updates_(sizeof(NTFIND_HANDLE)
             }
         }
         /* retry with bigger buffer */
-        ntStatus = pFindHandle->ntStatus = pfnNtQueryDirectoryFile(
-            pFindHandle->hDirectory,
-            NULL,
-            NULL,
-            NULL,
-            &pFindHandle->iostat_NtQueryDirectoryFile,
-            pFindHandle->pucBuffer,
-            pFindHandle->cbBuffer,
-            NtFindInfoClass,
-            FALSE, /* ReturnSingleEntry */
-            pusFileMask,
-            bFirstScan /* RestartScan */
+        ntStatus = pFindHandle->ntStatus = pfnNtQueryDirectoryFile(pFindHandle->hDirectory,
+                                                                   NULL,
+                                                                   NULL,
+                                                                   NULL,
+                                                                   &pFindHandle->iostat_NtQueryDirectoryFile,
+                                                                   pFindHandle->pucBuffer,
+                                                                   pFindHandle->cbBuffer,
+                                                                   NtFindInfoClass,
+                                                                   FALSE, /* ReturnSingleEntry */
+                                                                   pusFileMask,
+                                                                   bFirstScan /* RestartScan */
         );
-        _TRACE(2, "NtQueryDirectoryFile(): 0x%08X [restart = %d, bufsz = %u, 0x%08X]", ntStatus, bFirstScan, pFindHandle->cbBuffer, pFindHandle->iostat_NtQueryDirectoryFile.Status);
+        _TRACE(2,
+               "NtQueryDirectoryFile(): 0x%08X [restart = %d, bufsz = %u, 0x%08X]",
+               ntStatus,
+               bFirstScan,
+               pFindHandle->cbBuffer,
+               pFindHandle->iostat_NtQueryDirectoryFile.Status);
         /* This logic ensures we break out of the loop when the buffer is big enough to fit all entries */
         if ((STATUS_SUCCESS == ntStatus) && ((pFindHandle->cbBuffer - (ULONG)pFindHandle->iostat_NtQueryDirectoryFile.Information) > sizeof(NTFIND_DIR_INFO)))
         {
-            _TRACE(2, "bufsz[%u] - written[%u] = slack[%u] > sizeof(NTFIND_DIR_INFO)", pFindHandle->cbBuffer, (ULONG)pFindHandle->iostat_NtQueryDirectoryFile.Information, pFindHandle->cbBuffer - (ULONG)pFindHandle->iostat_NtQueryDirectoryFile.Information);
+            _TRACE(2,
+                   "bufsz[%u] - written[%u] = slack[%u] > sizeof(NTFIND_DIR_INFO)",
+                   pFindHandle->cbBuffer,
+                   (ULONG)pFindHandle->iostat_NtQueryDirectoryFile.Information,
+                   pFindHandle->cbBuffer - (ULONG)pFindHandle->iostat_NtQueryDirectoryFile.Information);
             break;
         }
         if (bBreak)
@@ -440,25 +466,26 @@ FORCEINLINE void wrapNtQueryDirectoryFile_(_Inout_updates_(sizeof(NTFIND_HANDLE)
     pFindHandle->bNoMoreFiles = (STATUS_NO_MORE_FILES == pFindHandle->ntStatus);
 }
 
-FORCEINLINE void updateNextEntryPointer_(_Inout_updates_(sizeof(NTFIND_HANDLE)) NTFIND_HANDLE* pFindHandle, _In_reads_bytes_(sizeof(NTFIND_DIR_INFO)) NTFIND_DIR_INFO* dirinfo)
+FORCEINLINE void updateNextEntryPointer_(_Inout_updates_(sizeof(NTFIND_HANDLE)) NTFIND_HANDLE* pFindHandle,
+                                         _In_reads_bytes_(sizeof(NTFIND_DIR_INFO)) NTFIND_DIR_INFO* dirinfo)
 {
-/*-----------------------------------------------------------------------------
-  Explanation:
+    /*-----------------------------------------------------------------------------
+      Explanation:
 
-  At least on Windows 7 x64 I observed that NTFIND_DIR_INFO::FileName ends up
-  NOT zero-terminated. This happens apparently whenever the end of the
-  (unterminated) string falls exactly on a 16-byte alignment boundary _and_ ends
-  up falling exactly onto the same address as start of the next entry.
-  
-  It makes sense, because the alignment has certain performance implications and
-  placing the start of the _next_ entry properly aligned is best.
+      At least on Windows 7 x64 I observed that NTFIND_DIR_INFO::FileName ends up
+      NOT zero-terminated. This happens apparently whenever the end of the
+      (unterminated) string falls exactly on a 16-byte alignment boundary _and_ ends
+      up falling exactly onto the same address as start of the next entry.
 
-  However, this necessitates a little workaround, so we can provide the caller
-  with a zero-terminated string, no matter what.
+      It makes sense, because the alignment has certain performance implications and
+      placing the start of the _next_ entry properly aligned is best.
 
-  The workaround has the nice side-effect of invalidating NextEntryOffset so it
-  becomes harder for callers to poke around the NTFIND_DIR_INFO entry chain.
-  -----------------------------------------------------------------------------*/
+      However, this necessitates a little workaround, so we can provide the caller
+      with a zero-terminated string, no matter what.
+
+      The workaround has the nice side-effect of invalidating NextEntryOffset so it
+      becomes harder for callers to poke around the NTFIND_DIR_INFO entry chain.
+      -----------------------------------------------------------------------------*/
 
     /* This is part one of the workaround for file names not being zero-
        terminated inside the NTFIND_DIR_INFO structure in some instances. */
@@ -494,7 +521,12 @@ FORCEINLINE void updateNextEntryPointer_(_Inout_updates_(sizeof(NTFIND_HANDLE)) 
         if (0 != *lpszFileNameEnd)
         {
             _TRACE(2, "end %p .|. %p next", ((PUCHAR)&dirinfo->FileName) + dirinfo->FileNameLength, pFindHandle->pucNextEntry);
-            _TRACE(0, "[ERR] UNEXPECTED: file name %*s (%zu -> %u) not zero-terminated!", (int)(dirinfo->FileNameLength / sizeof(WCHAR)), dirinfo->FileName, dirinfo->FileNameLength / sizeof(WCHAR), dirinfo->FileNameLength);
+            _TRACE(0,
+                   "[ERR] UNEXPECTED: file name %*s (%zu -> %u) not zero-terminated!",
+                   (int)(dirinfo->FileNameLength / sizeof(WCHAR)),
+                   dirinfo->FileName,
+                   dirinfo->FileNameLength / sizeof(WCHAR),
+                   dirinfo->FileNameLength);
         }
 #endif /* _DEBUG */
     }
@@ -526,10 +558,8 @@ __inline static NTFIND_DIR_INFO* getNextDirInfoEntry_(_In_reads_bytes_(sizeof(NT
         updateNextEntryPointer_(pFindHandle, dirinfo);
         if (NTFIND_SUPPRESS_SELF_AND_PARENT == (pFindHandle->dwFlags & NTFIND_SUPPRESS_SELF_AND_PARENT))
         {
-            if (
-                (dirinfo->FileNameLength == sizeof(WCHAR) && dirinfo->FileName[0] == L'.')
-                || (dirinfo->FileNameLength == 2 * sizeof(WCHAR) && dirinfo->FileName[0] == L'.' && dirinfo->FileName[1] == L'.')
-                )
+            if ((dirinfo->FileNameLength == sizeof(WCHAR) && dirinfo->FileName[0] == L'.') ||
+                (dirinfo->FileNameLength == 2 * sizeof(WCHAR) && dirinfo->FileName[0] == L'.' && dirinfo->FileName[1] == L'.'))
             {
                 return getNextDirInfoEntry_(pFindHandle);
             }
@@ -539,9 +569,14 @@ __inline static NTFIND_DIR_INFO* getNextDirInfoEntry_(_In_reads_bytes_(sizeof(NT
     return dirinfo;
 }
 
-FORCEINLINE static NTSTATUS openDirectoryForSearch_(_Out_writes_bytes_(sizeof(HANDLE)) HANDLE* phDirectory, _In_opt_ HANDLE hParentDir, _In_z_ LPCWSTR lpszPathName, _Out_writes_bytes_(sizeof(UNICODE_STRING)) PUNICODE_STRING pusNtPathName, _Out_writes_bytes_(sizeof(UNICODE_STRING)) PUNICODE_STRING pusPartName, BOOLEAN bCaseSensitive)
+FORCEINLINE static NTSTATUS openDirectoryForSearch_(_Out_writes_bytes_(sizeof(HANDLE)) HANDLE* phDirectory,
+                                                    _In_opt_ HANDLE hParentDir,
+                                                    _In_z_ LPCWSTR lpszPathName,
+                                                    _Out_writes_bytes_(sizeof(UNICODE_STRING)) PUNICODE_STRING pusNtPathName,
+                                                    _Out_writes_bytes_(sizeof(UNICODE_STRING)) PUNICODE_STRING pusPartName,
+                                                    BOOLEAN bCaseSensitive)
 {
-    UNICODE_STRING usNtPathName = { 0, 0, NULL }, usPartName = { 0, 0, NULL };
+    UNICODE_STRING usNtPathName = {0, 0, NULL}, usPartName = {0, 0, NULL};
     NTSTATUS ntStatus;
     OBJECT_ATTRIBUTES oa;
     HANDLE hDirectory;
@@ -561,7 +596,7 @@ FORCEINLINE static NTSTATUS openDirectoryForSearch_(_Out_writes_bytes_(sizeof(HA
         }
         lpszEnd = &usNtPathName.Buffer[usNtPathName.Length / sizeof(WCHAR)];
         /* walk through the string from its back */
-        for (lpszCurrChar =  &lpszEnd[-1]; lpszCurrChar >= usNtPathName.Buffer; lpszCurrChar--)
+        for (lpszCurrChar = &lpszEnd[-1]; lpszCurrChar >= usNtPathName.Buffer; lpszCurrChar--)
         {
             if (*lpszCurrChar == L'\\')
             {
@@ -659,28 +694,24 @@ FORCEINLINE static NTSTATUS openDirectoryForSearch_(_Out_writes_bytes_(sizeof(HA
 
     InitializeObjectAttributes(&oa, &usNtPathName, (bCaseSensitive) ? 0 : OBJ_CASE_INSENSITIVE, hParentDir, NULL);
 
-    ntStatus = pfnNtOpenFile(
-        &hDirectory,
-        FILE_LIST_DIRECTORY | SYNCHRONIZE,
-        &oa,
-        &iostat,
-        FILE_SHARE_READ | FILE_SHARE_WRITE,
-        FILE_DIRECTORY_FILE | FILE_OPEN_FOR_BACKUP_INTENT | FILE_SYNCHRONOUS_IO_NONALERT
-    );
+    ntStatus = pfnNtOpenFile(&hDirectory,
+                             FILE_LIST_DIRECTORY | SYNCHRONIZE,
+                             &oa,
+                             &iostat,
+                             FILE_SHARE_READ | FILE_SHARE_WRITE,
+                             FILE_DIRECTORY_FILE | FILE_OPEN_FOR_BACKUP_INTENT | FILE_SYNCHRONOUS_IO_NONALERT);
 
     /* if it fails in this specific way and we did strip the backslash, try to put it back and try opening again */
     if (bStrippedBackslash && (ntStatus == STATUS_NOT_A_DIRECTORY || ntStatus == STATUS_INVALID_PARAMETER))
     {
         /* put back slash for a single NtOpenFile() call */
         usNtPathName.Length += sizeof(WCHAR);
-        ntStatus = pfnNtOpenFile(
-            &hDirectory,
-            FILE_LIST_DIRECTORY | SYNCHRONIZE,
-            &oa,
-            &iostat,
-            FILE_SHARE_READ | FILE_SHARE_WRITE,
-            FILE_DIRECTORY_FILE | FILE_OPEN_FOR_BACKUP_INTENT | FILE_SYNCHRONOUS_IO_NONALERT
-        );
+        ntStatus = pfnNtOpenFile(&hDirectory,
+                                 FILE_LIST_DIRECTORY | SYNCHRONIZE,
+                                 &oa,
+                                 &iostat,
+                                 FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                 FILE_DIRECTORY_FILE | FILE_OPEN_FOR_BACKUP_INTENT | FILE_SYNCHRONOUS_IO_NONALERT);
         usNtPathName.Length -= sizeof(WCHAR);
     }
 
@@ -705,16 +736,16 @@ FORCEINLINE static NTSTATUS openDirectoryForSearch_(_Out_writes_bytes_(sizeof(HA
         }
     }
 
-    *phDirectory = hDirectory; /* it's on the caller now to close this handle */
+    *phDirectory = hDirectory;     /* it's on the caller now to close this handle */
     *pusNtPathName = usNtPathName; /* it's on the caller now to free this */
-    *pusPartName = usPartName; /* it's on the caller now to free this */
+    *pusPartName = usPartName;     /* it's on the caller now to free this */
 
     return ntStatus;
-
 }
 
 /* returns offset to next entry (or 0) */
-FORCEINLINE static void populateFindFileData_(_Out_writes_bytes_(sizeof(NTFIND_DATA)) NTFIND_DATA* lpFindFileData, _In_reads_bytes_(sizeof(NTFIND_DIR_INFO)) NTFIND_DIR_INFO* dirinfo)
+FORCEINLINE static void populateFindFileData_(_Out_writes_bytes_(sizeof(NTFIND_DATA)) NTFIND_DATA* lpFindFileData,
+                                              _In_reads_bytes_(sizeof(NTFIND_DIR_INFO)) NTFIND_DIR_INFO* dirinfo)
 {
     /* populate the find data */
     DWORD dwAttr = lpFindFileData->dwFileAttributes = dirinfo->FileAttributes;
@@ -730,10 +761,10 @@ FORCEINLINE static void populateFindFileData_(_Out_writes_bytes_(sizeof(NTFIND_D
     lpFindFileData->cFileName[dirinfo->FileNameLength / sizeof(WCHAR)] = 0; /* zero-terminate the string */
 }
 
-_Success_(return != INVALID_HANDLE_VALUE)
-EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCWSTR lpszPathName, _Out_writes_bytes_(sizeof(NTFIND_DATA)) NTFIND_DATA* lpFindFileData, ULONG dwFlags)
+_Success_(return != INVALID_HANDLE_VALUE) EXTERN_C HANDLE WINAPI
+    NativeFindFirstFile(_In_z_ LPCWSTR lpszPathName, _Out_writes_bytes_(sizeof(NTFIND_DATA)) NTFIND_DATA* lpFindFileData, ULONG dwFlags)
 {
-    UNICODE_STRING usNtPathName = { 0, 0, NULL }, usPartName = { 0, 0, NULL };
+    UNICODE_STRING usNtPathName = {0, 0, NULL}, usPartName = {0, 0, NULL};
     NTSTATUS ntStatus;
     HANDLE hDirectory;
     NTFIND_HANDLE* pFindHandle;
@@ -782,8 +813,7 @@ EXTERN_C HANDLE WINAPI NativeFindFirstFile(_In_z_ LPCWSTR lpszPathName, _Out_wri
     return (HANDLE)pFindHandle;
 }
 
-_Success_(return != FALSE)
-EXTERN_C BOOL WINAPI NativeFindNextFile(_In_ HANDLE hFindFile, _Out_writes_bytes_(sizeof(NTFIND_DATA)) NTFIND_DATA* lpFindFileData)
+_Success_(return != FALSE) EXTERN_C BOOL WINAPI NativeFindNextFile(_In_ HANDLE hFindFile, _Out_writes_bytes_(sizeof(NTFIND_DATA)) NTFIND_DATA* lpFindFileData)
 {
     NTFIND_HANDLE* pFindHandle = (NTFIND_HANDLE*)hFindFile;
     BOOL bRetVal = FALSE;
@@ -814,8 +844,7 @@ EXTERN_C BOOL WINAPI NativeFindNextFile(_In_ HANDLE hFindFile, _Out_writes_bytes
     return bRetVal;
 }
 
-_Success_(return != FALSE)
-EXTERN_C BOOL NativeFindClose(_Frees_ptr_ HANDLE hFindFile)
+_Success_(return != FALSE) EXTERN_C BOOL NativeFindClose(_Frees_ptr_ HANDLE hFindFile)
 {
     if (INVALID_HANDLE_VALUE == hFindFile || !hFindFile)
     {
@@ -854,14 +883,15 @@ typedef struct _WRAPPED_CONTEXT
 
 __inline static NTSTATUS recurseIntoDirectory_(_In_opt_ HANDLE hParentDir, _In_ WRAPPED_CONTEXT const* wctx)
 {
-    UNICODE_STRING usNtPathName = { 0, 0, NULL }, usPartName = { 0, 0, NULL };
+    UNICODE_STRING usNtPathName = {0, 0, NULL}, usPartName = {0, 0, NULL};
     HANDLE hCurrentDir;
     NTSTATUS ntStatus;
     NTFIND_HANDLE* pFindHandle;
     NTFIND_DIR_INFO* dirinfo;
 
     /* attempt to open the given path */
-    ntStatus = openDirectoryForSearch_(&hCurrentDir, hParentDir, wctx->cbctx.lpszPathName, &usNtPathName, &usPartName, (BOOLEAN)(0 != (wctx->cbctx.dwFlags & NTFIND_CASE_SENSITIVE)));
+    ntStatus = openDirectoryForSearch_(
+        &hCurrentDir, hParentDir, wctx->cbctx.lpszPathName, &usNtPathName, &usPartName, (BOOLEAN)(0 != (wctx->cbctx.dwFlags & NTFIND_CASE_SENSITIVE)));
 
     if (!NT_SUCCESS(ntStatus))
     {
@@ -911,8 +941,7 @@ __inline static NTSTATUS recurseIntoDirectory_(_In_opt_ HANDLE hParentDir, _In_ 
         {
             NTSTATUS ntTempStatus;
             const ULONG cbNeeded = ((usPartName.Length) ? usPartName.Length : sizeof(WCHAR)) /* for an asterisk or whatever search mask was passed */
-                + dirinfo->FileNameLength
-                + sizeof(WCHAR) * 2; /* we need one backslash and a terminating zero */
+                                   + dirinfo->FileNameLength + sizeof(WCHAR) * 2;            /* we need one backslash and a terminating zero */
             LPWSTR lpszSubdirPathName;
             WRAPPED_CONTEXT wctxSubDir = {
                 {
@@ -987,17 +1016,13 @@ __inline static NTSTATUS recurseIntoDirectory_(_In_opt_ HANDLE hParentDir, _In_ 
     return STATUS_SUCCESS;
 }
 
-EXTERN_C NTSTATUS WINAPI NativeFindFilesZeroCopy(_In_ NTFIND_CALLBACK_CONTEXT const* ctx, _In_ NativeFindZeroCopyEntryCallback_t pfnEntry, _In_ NativeFindZeroCopyDrillDownCallback_t pfnDrillDown)
+EXTERN_C NTSTATUS WINAPI NativeFindFilesZeroCopy(_In_ NTFIND_CALLBACK_CONTEXT const* ctx,
+                                                 _In_ NativeFindZeroCopyEntryCallback_t pfnEntry,
+                                                 _In_ NativeFindZeroCopyDrillDownCallback_t pfnDrillDown)
 {
     WRAPPED_CONTEXT wctx;
 
-    if (
-        !pfnEntry
-        || !pfnDrillDown
-        || !ctx || (ctx->cbSize != sizeof(*ctx))
-        || (ctx->pParentContext != NULL)
-        || (ctx->lpszPathName == NULL)
-        )
+    if (!pfnEntry || !pfnDrillDown || !ctx || (ctx->cbSize != sizeof(*ctx)) || (ctx->pParentContext != NULL) || (ctx->lpszPathName == NULL))
     {
         return STATUS_INVALID_PARAMETER;
     }

@@ -29,3 +29,8 @@ buildlog.html
 .vs/**
 fstest/**
 .git/
+obj/
+x64/
+Release/
+Debug/
+BuildCommandLines*.log

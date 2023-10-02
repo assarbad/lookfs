@@ -10,18 +10,27 @@
 ///
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef WINVER
-#   define WINVER           0x0500
+#    define WINVER 0x0500
 #endif
 #ifndef _WIN32_WINNT
-#   define _WIN32_WINNT     0x0501
+#    define _WIN32_WINNT 0x0501
 #endif
 
 #ifdef _DEBUG
-#   include <cstdlib>
-#   include <crtdbg.h>
-#   define _TRACE(fmt, ...) do { _ftprintf(stderr, _T("TRACE: ")); _ftprintf(stderr, fmt, __VA_ARGS__); _ftprintf(stderr, _T("\n")); } while (0)
+#    include <cstdlib>
+#    include <crtdbg.h>
+#    define _TRACE(fmt, ...)                     \
+        do                                       \
+        {                                        \
+            _ftprintf(stderr, _T("TRACE: "));    \
+            _ftprintf(stderr, fmt, __VA_ARGS__); \
+            _ftprintf(stderr, _T("\n"));         \
+        } while (0)
 #else
-#   define _TRACE(fmt, ...) do {} while (0)
+#    define _TRACE(fmt, ...) \
+        do                   \
+        {                    \
+        } while (0)
 #endif // _DEBUG
 #include <cstdio>
 #include <tchar.h>
@@ -53,12 +62,13 @@ namespace
         bool printname;
     } settings_t;
 
-    static settings_t g_settings = { true, false, false, true, false, false };
+    static settings_t g_settings = {true, false, false, true, false, false};
 
     class CFileStreamWrapper
     {
         FILE* m_file;
-    public:
+
+      public:
         CFileStreamWrapper(TCHAR const* lpszPath = NULL)
             : m_file(NULL)
         {
@@ -79,7 +89,7 @@ namespace
                 if (err)
                 {
 #ifdef _DEBUG
-                    TCHAR buf[MAX_PATH] = { 0 };
+                    TCHAR buf[MAX_PATH] = {0};
                     errno_t converr = _tcserror_s(buf, _countof(buf), err);
                     if (converr)
                     {
@@ -126,7 +136,7 @@ namespace
             return (m_file != NULL);
         }
 
-    private:
+      private:
         // Hide these
         CFileStreamWrapper(CFileStreamWrapper&);
         CFileStreamWrapper& operator=(CFileStreamWrapper&);
@@ -143,18 +153,26 @@ namespace
 
     CFileStreamWrapper g_outfile;
 
-    static const TCHAR *getSimpleOptLastErrorText(int a_nError)
+    static const TCHAR* getSimpleOptLastErrorText(int a_nError)
     {
         switch (a_nError)
         {
-        case SO_SUCCESS:            return _T("Success");
-        case SO_OPT_INVALID:        return _T("Unrecognized option");
-        case SO_OPT_MULTIPLE:       return _T("Option matched multiple strings");
-        case SO_ARG_INVALID:        return _T("Option does not accept argument");
-        case SO_ARG_INVALID_TYPE:   return _T("Invalid argument format");
-        case SO_ARG_MISSING:        return _T("Required argument is missing");
-        case SO_ARG_INVALID_DATA:   return _T("Invalid argument data");
-        default:                    return _T("Unknown error");
+        case SO_SUCCESS:
+            return _T("Success");
+        case SO_OPT_INVALID:
+            return _T("Unrecognized option");
+        case SO_OPT_MULTIPLE:
+            return _T("Option matched multiple strings");
+        case SO_ARG_INVALID:
+            return _T("Option does not accept argument");
+        case SO_ARG_INVALID_TYPE:
+            return _T("Invalid argument format");
+        case SO_ARG_MISSING:
+            return _T("Required argument is missing");
+        case SO_ARG_INVALID_DATA:
+            return _T("Invalid argument data");
+        default:
+            return _T("Unknown error");
         }
     }
 
@@ -181,12 +199,7 @@ namespace
         TCHAR* retBuf = 0;
         va_list ptr;
         va_start(ptr, MessageID);
-        if (wrapFormatMessage_(
-            hMod,
-            MessageID,
-            (TCHAR**)(&retBuf),
-            &ptr
-        ) && (0 != retBuf))
+        if (wrapFormatMessage_(hMod, MessageID, (TCHAR**)(&retBuf), &ptr) && (0 != retBuf))
         {
             CString s(retBuf);
             LocalFree((HLOCAL)(retBuf));
@@ -283,11 +296,7 @@ namespace
             _tprintf(_T("%ws\n"), rp.Path());
             if (sett.verbose)
             {
-                _tprintf(_T("\tA %sMicrosoft %s (virt == %d)\n"),
-                    ((rp.isMicrosoftTag()) ? _T("") : _T("non-")),
-                    getReparseType(rp),
-                    rp.isVirtual()
-                );
+                _tprintf(_T("\tA %sMicrosoft %s (virt == %d)\n"), ((rp.isMicrosoftTag()) ? _T("") : _T("non-")), getReparseType(rp), rp.isVirtual());
 #ifdef RP_QUERY_FILE_ID
                 if (-1 != rp.FileIndex())
                 {
@@ -318,18 +327,17 @@ namespace
                     _tprintf(_T("\tTag       : %08X\n"), rp.ReparseTag());
                 }
                 _tprintf(_T("\tGUID      : {%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}\n"),
-                    rp.ReparseGuid().Data1,
-                    rp.ReparseGuid().Data2,
-                    rp.ReparseGuid().Data3,
-                    rp.ReparseGuid().Data4[0],
-                    rp.ReparseGuid().Data4[1],
-                    rp.ReparseGuid().Data4[2],
-                    rp.ReparseGuid().Data4[3],
-                    rp.ReparseGuid().Data4[4],
-                    rp.ReparseGuid().Data4[5],
-                    rp.ReparseGuid().Data4[6],
-                    rp.ReparseGuid().Data4[7]
-                );
+                         rp.ReparseGuid().Data1,
+                         rp.ReparseGuid().Data2,
+                         rp.ReparseGuid().Data3,
+                         rp.ReparseGuid().Data4[0],
+                         rp.ReparseGuid().Data4[1],
+                         rp.ReparseGuid().Data4[2],
+                         rp.ReparseGuid().Data4[3],
+                         rp.ReparseGuid().Data4[4],
+                         rp.ReparseGuid().Data4[5],
+                         rp.ReparseGuid().Data4[6],
+                         rp.ReparseGuid().Data4[7]);
             }
         }
         else
@@ -363,9 +371,9 @@ namespace
         NTFIND_DATA m_fd;
         LONG m_lError;
         // hide these
-        CPathFinder(CPathFinder&); // hide
+        CPathFinder(CPathFinder&);            // hide
         CPathFinder& operator=(CPathFinder&); // hide
-    public:
+      public:
         CPathFinder(TCHAR const* szPath, BOOLEAN bCaseSensitive = FALSE)
             : m_bValid(FALSE)
             , m_hFind(INVALID_HANDLE_VALUE)
@@ -387,7 +395,8 @@ namespace
                 m_hFind = NativeFindFirstFile(sSearchPath, &m_fd, bCaseSensitive);
                 if (INVALID_HANDLE_VALUE != m_hFind)
                 {
-                    //_TRACE(_T("NativeFindFirstFile(\"%s\", %p, %s) -> %p"), sSearchPath.GetString(), &m_fd, bCaseSensitive ? _T("TRUE") : _T("FALSE"), m_hFind);
+                    //_TRACE(_T("NativeFindFirstFile(\"%s\", %p, %s) -> %p"), sSearchPath.GetString(), &m_fd, bCaseSensitive ? _T("TRUE") : _T("FALSE"),
+                    // m_hFind);
                     // Keep looking for the next item until we have skipped the . and .. entries
                     while (isDotDir_(m_fd.cFileName))
                     {
@@ -401,7 +410,8 @@ namespace
                 {
                     m_lError = GetLastError();
                     m_bValid = FALSE;
-                    //_TRACE(_T("NativeFindFirstFile(\"%s\", %p, %s) -> INVALID_HANDLE_VALUE (error: %d)"), sSearchPath.GetString(), &m_fd, bCaseSensitive ? _T("TRUE") : _T("FALSE"), m_lError);
+                    //_TRACE(_T("NativeFindFirstFile(\"%s\", %p, %s) -> INVALID_HANDLE_VALUE (error: %d)"), sSearchPath.GetString(), &m_fd, bCaseSensitive ?
+                    //_T("TRUE") : _T("FALSE"), m_lError);
                 }
             }
         }
@@ -487,7 +497,8 @@ namespace
         {
             return m_lError;
         }
-    private:
+
+      private:
         static BOOL isDotDir_(LPCTSTR path)
         {
             if (!path)
@@ -514,8 +525,7 @@ namespace
                 }
             }
             size_t const nOffset = _countof(WIN32_FILE_NAMESPACE_A) - 1;
-            if (m_sNormalizedPath.Left(nOffset) != _T(WIN32_FILE_NAMESPACE_A)
-                && m_sNormalizedPath.Left(nOffset) != _T(WIN32_DEVICE_NAMESPACE_A))
+            if (m_sNormalizedPath.Left(nOffset) != _T(WIN32_FILE_NAMESPACE_A) && m_sNormalizedPath.Left(nOffset) != _T(WIN32_DEVICE_NAMESPACE_A))
             {
                 CString sFullPathBuf(_T(WIN32_FILE_NAMESPACE_A));
                 LPTSTR lpszFullPathBuf = &sFullPathBuf.GetBufferSetLength(0x8000)[nOffset];
@@ -524,14 +534,20 @@ namespace
                 DWORD dwLength = ::GetFullPathName(m_sNormalizedPath, nBufferLength, lpszFullPathBuf, &lpszFileName);
                 if (!dwLength)
                 {
-                    _TRACE(_T("[ERROR:%d] Failed to get full path from \"%s\" (%s)."), GetLastError(), m_sNormalizedPath.GetString(), formatMessage(NULL, GetLastError()).GetString());
+                    _TRACE(_T("[ERROR:%d] Failed to get full path from \"%s\" (%s)."),
+                           GetLastError(),
+                           m_sNormalizedPath.GetString(),
+                           formatMessage(NULL, GetLastError()).GetString());
                     m_lError = GetLastError();
                     m_bValid = FALSE;
                     return m_bValid;
                 }
                 if (dwLength > nBufferLength)
                 {
-                    _TRACE(_T("[ERROR:%d] Buffer too small to get full path from \"%s\" (%s)."), GetLastError(), m_sNormalizedPath.GetString(), formatMessage(NULL, GetLastError()).GetString());
+                    _TRACE(_T("[ERROR:%d] Buffer too small to get full path from \"%s\" (%s)."),
+                           GetLastError(),
+                           m_sNormalizedPath.GetString(),
+                           formatMessage(NULL, GetLastError()).GetString());
                     m_lError = GetLastError();
                     m_bValid = FALSE;
                     return m_bValid;
@@ -548,7 +564,10 @@ namespace
                 // If there was no slash before the wildcard/filename, something else is fishy ... bail out
                 if (-1 == iLastSlash)
                 {
-                    _TRACE(_T("[ERROR:%d] Could not find last slash in \"%s\" (%s)."), GetLastError(), m_sNormalizedPath.GetString(), formatMessage(NULL, GetLastError()).GetString());
+                    _TRACE(_T("[ERROR:%d] Could not find last slash in \"%s\" (%s)."),
+                           GetLastError(),
+                           m_sNormalizedPath.GetString(),
+                           formatMessage(NULL, GetLastError()).GetString());
                     m_lError = GetLastError();
                     m_bValid = FALSE;
                     return m_bValid;
@@ -573,31 +592,19 @@ namespace
 
     static void showVersion(const CVersionInfo& verinfo)
     {
-        _tprintf(
-            _T("%s %s\n")
-            , verinfo[_T("OriginalFilename")]
-            , verinfo[_T("FileVersion")]
-        );
+        _tprintf(_T("%s %s\n"), verinfo[_T("OriginalFilename")], verinfo[_T("FileVersion")]);
 #ifdef HG_REV_ID
-        _tprintf(
-            _T("  Revision: %s\n")
-            , verinfo[_T("Mercurial revision")]
-        );
+        _tprintf(_T("  Revision: %s\n"), verinfo[_T("Mercurial revision")]);
 #endif
-        _tprintf(
-            _T("  %s\n\n")
-            , verinfo[_T("LegalCopyright")]
-        );
+        _tprintf(_T("  %s\n\n"), verinfo[_T("LegalCopyright")]);
     }
 
     static void showHelp(const CVersionInfo& verinfo)
     {
         showVersion(verinfo);
-        _tprintf(
-            _T("Syntax:\n")
-            _T("  %s [-?|-h|--help|...] [--] [path...]\n")
-            , verinfo[_T("OriginalFilename")]
-        );
+        _tprintf(_T("Syntax:\n")
+                 _T("  %s [-?|-h|--help|...] [--] [path...]\n"),
+                 verinfo[_T("OriginalFilename")]);
         _tprintf(_T("  -?, -h, --help\n\tShow this help and exit\n"));
         _tprintf(_T("  -V, --version\n\tShow program version and exit\n"));
         _tprintf(_T("  -L, --nologo, --nobanner\n\tDon't show program banner text\n"));
@@ -635,7 +642,8 @@ namespace
                                 {
                                     if(!sett.noerror)
                                     {
-                                        _ftprintf(stderr, _T("[ERROR:%d] Invalid file attributes for \"%s\" (%s).\n"), GetLastError(), sCheckedPath.GetString(), formatMessage(NULL, GetLastError()).GetString());
+                                        _ftprintf(stderr, _T("[ERROR:%d] Invalid file attributes for \"%s\" (%s).\n"), GetLastError(), sCheckedPath.GetString(),
+                   formatMessage(NULL, GetLastError()).GetString());
                                     }
                                     return 1;
                                 }
@@ -646,7 +654,11 @@ namespace
                 */
                 if (!sett.noerror)
                 {
-                    _ftprintf(stderr, _T("[ERROR:%d] Failed to read contents of \"%s\" (%s).\n"), pathFinder.LastError(), pathFinder.getFullPathName().GetString(), formatMessage(NULL, pathFinder.LastError()).GetString());
+                    _ftprintf(stderr,
+                              _T("[ERROR:%d] Failed to read contents of \"%s\" (%s).\n"),
+                              pathFinder.LastError(),
+                              pathFinder.getFullPathName().GetString(),
+                              formatMessage(NULL, pathFinder.LastError()).GetString());
                 }
                 return 1;
             }
@@ -698,37 +710,37 @@ namespace
     };
 
     CSimpleOpt::SOption g_Options[] = {
-        { OPT_HELP,     _T("-?"),           SO_NONE },
-        { OPT_HELP,     _T("-h"),           SO_NONE },
-        { OPT_HELP,     _T("-help"),        SO_NONE },
-        { OPT_HELP,     _T("--help"),       SO_NONE },
-        { OPT_NOLOGO,   _T("-L"),           SO_NONE },
-        { OPT_NOLOGO,   _T("--nologo"),     SO_NONE },
-        { OPT_NOLOGO,   _T("--nobanner"),   SO_NONE },
-        { OPT_NOERR,    _T("-E"),           SO_NONE },
-        { OPT_NOERR,    _T("--noerror"),    SO_NONE },
-        { OPT_VERBOSE,  _T("-v"),           SO_NONE },
-        { OPT_VERBOSE,  _T("--verbose"),    SO_NONE },
-        { OPT_VERSION,  _T("-V"),           SO_NONE },
-        { OPT_VERSION,  _T("--version"),    SO_NONE },
-        { OPT_NOCASE,   _T("-i"),           SO_NONE },
-        { OPT_NOCASE,   _T("--nocase"),     SO_NONE },
-        { OPT_NOCASE,   _T("--case-insensitive"), SO_NONE },
-        { OPT_SHOWALL,  _T("-a"),           SO_NONE },
-        { OPT_SHOWALL,  _T("--all"),        SO_NONE },
-        { OPT_SHOWALL,  _T("--show-all"),   SO_NONE },
-        { OPT_PRINTNAME,_T("-p"),           SO_NONE },
-        { OPT_PRINTNAME,_T("--printname"),  SO_NONE },
-        { OPT_PRINTNAME,_T("--print-name"), SO_NONE },
-        { OPT_OUTPUTFILE,_T("-o"),         SO_REQ_SEP },
-        { OPT_OUTPUTFILE,_T("--output"),    SO_REQ_SEP },
-        { OPT_STOP,     _T("--"),           SO_NONE },
+        {OPT_HELP, _T("-?"), SO_NONE},
+        {OPT_HELP, _T("-h"), SO_NONE},
+        {OPT_HELP, _T("-help"), SO_NONE},
+        {OPT_HELP, _T("--help"), SO_NONE},
+        {OPT_NOLOGO, _T("-L"), SO_NONE},
+        {OPT_NOLOGO, _T("--nologo"), SO_NONE},
+        {OPT_NOLOGO, _T("--nobanner"), SO_NONE},
+        {OPT_NOERR, _T("-E"), SO_NONE},
+        {OPT_NOERR, _T("--noerror"), SO_NONE},
+        {OPT_VERBOSE, _T("-v"), SO_NONE},
+        {OPT_VERBOSE, _T("--verbose"), SO_NONE},
+        {OPT_VERSION, _T("-V"), SO_NONE},
+        {OPT_VERSION, _T("--version"), SO_NONE},
+        {OPT_NOCASE, _T("-i"), SO_NONE},
+        {OPT_NOCASE, _T("--nocase"), SO_NONE},
+        {OPT_NOCASE, _T("--case-insensitive"), SO_NONE},
+        {OPT_SHOWALL, _T("-a"), SO_NONE},
+        {OPT_SHOWALL, _T("--all"), SO_NONE},
+        {OPT_SHOWALL, _T("--show-all"), SO_NONE},
+        {OPT_PRINTNAME, _T("-p"), SO_NONE},
+        {OPT_PRINTNAME, _T("--printname"), SO_NONE},
+        {OPT_PRINTNAME, _T("--print-name"), SO_NONE},
+        {OPT_OUTPUTFILE, _T("-o"), SO_REQ_SEP},
+        {OPT_OUTPUTFILE, _T("--output"), SO_REQ_SEP},
+        {OPT_STOP, _T("--"), SO_NONE},
         SO_END_OF_OPTIONS,
     };
 
-}
+} // namespace
 
-int __cdecl _tmain(int argc, _TCHAR *argv[])
+int __cdecl _tmain(int argc, _TCHAR* argv[])
 {
 #ifdef _DEBUG
     _CrtSetDbgFlag(_CRTDBG_CHECK_ALWAYS_DF | _CRTDBG_ALLOC_MEM_DF);
@@ -740,11 +752,7 @@ int __cdecl _tmain(int argc, _TCHAR *argv[])
     {
         if (args.LastError() != SO_SUCCESS)
         {
-            _ftprintf(
-                stderr
-                , _T("%s: '%s' (use --help to get command line help)\n")
-                , getSimpleOptLastErrorText(args.LastError()), args.OptionText()
-            );
+            _ftprintf(stderr, _T("%s: '%s' (use --help to get command line help)\n"), getSimpleOptLastErrorText(args.LastError()), args.OptionText());
             continue;
         }
         switch (args.OptionId())

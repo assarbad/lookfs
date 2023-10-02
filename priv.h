@@ -8,7 +8,7 @@
 #ifndef __PRIV_H_VER__
 #define __PRIV_H_VER__ 2018102318
 #if (defined(_MSC_VER) && (_MSC_VER >= 1020)) || defined(__MCPP)
-#pragma once
+#    pragma once
 #endif /* Check for "#pragma once" support */
 
 #include <Windows.h>
@@ -34,7 +34,8 @@ class CSnapEnableAssignedPrivilege
 {
     BOOL m_bEnabled, m_bNoErrors;
     LPTSTR m_lpszPrivilege;
-public:
+
+  public:
     CSnapEnableAssignedPrivilege(LPCTSTR lpszPrivilege, BOOL bNoErrors = TRUE)
         : m_bEnabled(FALSE)
         , m_bNoErrors(bNoErrors)
@@ -67,7 +68,7 @@ public:
         return m_bEnabled != FALSE;
     }
 
-    inline bool operator !() const
+    inline bool operator!() const
     {
         return m_bEnabled == FALSE;
     }
@@ -81,7 +82,8 @@ public:
     {
         return m_lpszPrivilege;
     }
-private:
+
+  private:
     CSnapEnableAssignedPrivilege(CSnapEnableAssignedPrivilege&);
     CSnapEnableAssignedPrivilege& operator=(CSnapEnableAssignedPrivilege&);
 };

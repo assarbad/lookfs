@@ -13,7 +13,7 @@
 typedef struct _ALL_TOKEN_PRIVILEGES
 {
     DWORD PrivilegeCount;
-    LUID_AND_ATTRIBUTES Privileges[2*MaxTokenInfoClass + 1];
+    LUID_AND_ATTRIBUTES Privileges[2 * MaxTokenInfoClass + 1];
 } ALL_TOKEN_PRIVILEGES;
 
 HANDLE PrivGetProcessToken(DWORD dwAdditionalAccess)
@@ -129,7 +129,8 @@ BOOL PrivSetThreadPrivilege(LPCTSTR lpszPrivilege, BOOL bEnablePrivilege)
 
 BOOL PrivHasTokenPrivilege(HANDLE hToken, LPCTSTR lpszPrivilege, LPDWORD lpdwAttributes)
 {
-    struct {
+    struct
+    {
         union
         {
             TOKEN_PRIVILEGES tp;

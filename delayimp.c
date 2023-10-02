@@ -32,18 +32,19 @@
 
 #define DELAYIMP_INSECURE_WRITABLE_HOOKS
 #if defined(_CONSOLE) || defined(_CONSOLE_APP)
-#   include <Windows.h>
-#   include <tchar.h>
-#   define DelayLoadError _tprintf
+#    include <Windows.h>
+#    include <tchar.h>
+#    define DelayLoadError _tprintf
 #else
-#   include "stdafx.h" /* Must alias DelayLoadError to a function that behaves like _tprintf */
+#    include "stdafx.h" /* Must alias DelayLoadError to a function that behaves like _tprintf */
 #endif
 #ifndef FACILITY_VISUALCPP
-#   define FACILITY_VISUALCPP  ((LONG)0x6d)
+#    define FACILITY_VISUALCPP ((LONG)0x6d)
 #endif // !FACILITY_VISUALCPP
-#pragma warning(disable:4201)
+#pragma warning(push)
+#pragma warning(disable : 4201)
 #include <delayimp.h>
-#pragma warning(default:4201)
+#pragma warning(pop)
 
 #pragma comment(lib, "delayimp")
 
@@ -52,19 +53,19 @@ namespace
 {
 #endif // __cplusplus
     LPCSTR lpszNtDllName = "ntdll.dll";
-    LPCSTR lpszNtDelayedDllName = "ntdll-delayed.dll";
+    LPCSTR lpszNtDelayedDllName = "ntdll.dld";
 #ifdef __cplusplus
 }
 #endif // __cplusplus
 
-EXTERN_C NTSTATUS NTAPI FallbackRtlDosPathNameToNtPathName_U_WithStatus(PCWSTR DosFileName, PVOID NtFileName, PVOID *FilePart, PVOID RelativeName);
+EXTERN_C NTSTATUS NTAPI FallbackRtlDosPathNameToNtPathName_U_WithStatus(PCWSTR DosFileName, PVOID NtFileName, PVOID* FilePart, PVOID RelativeName);
 
 static LONG WINAPI DelayLoadFilter(PEXCEPTION_POINTERS pExcPointers)
 {
     LONG lDisposition = EXCEPTION_EXECUTE_HANDLER;
     PDelayLoadInfo pdli = (PDelayLoadInfo)(pExcPointers->ExceptionRecord->ExceptionInformation[0]);
 
-    switch(pExcPointers->ExceptionRecord->ExceptionCode)
+    switch (pExcPointers->ExceptionRecord->ExceptionCode)
     {
     case VcppException(ERROR_SEVERITY_ERROR, ERROR_MOD_NOT_FOUND):
         (void)DelayLoadError(_T("The DLL %hs could not be loaded."), pdli->szDll);
@@ -72,7 +73,7 @@ static LONG WINAPI DelayLoadFilter(PEXCEPTION_POINTERS pExcPointers)
     case VcppException(ERROR_SEVERITY_ERROR, ERROR_PROC_NOT_FOUND):
         {
             LPCSTR lpszDllName = pdli->szDll;
-            if(0 == lstrcmpiA(pdli->szDll, lpszNtDelayedDllName))
+            if (0 == lstrcmpiA(pdli->szDll, lpszNtDelayedDllName))
             {
                 lpszDllName = lpszNtDllName;
             }
@@ -100,25 +101,24 @@ EXTERN_C void force_resolve_all(void)
         /* Force all delay-loaded symbols to be resolved at once */
         (void)__HrLoadAllImportsForDll(lpszNtDelayedDllName);
     }
-    __except(DelayLoadFilter(GetExceptionInformation()))
+    __except (DelayLoadFilter(GetExceptionInformation()))
     {
         ExitProcess(1);
     }
-
 }
 
 static FARPROC WINAPI NtdllDliHook(unsigned dliNotify, PDelayLoadInfo pdli)
 {
-    switch(dliNotify)
+    switch (dliNotify)
     {
     case dliNotePreLoadLibrary:
-        if(0 == lstrcmpiA(pdli->szDll, lpszNtDelayedDllName))
+        if (0 == lstrcmpiA(pdli->szDll, lpszNtDelayedDllName))
         {
             HMODULE hNtDll;
-            if(NULL != (hNtDll = GetModuleHandleA(lpszNtDllName)))
+            if (NULL != (hNtDll = GetModuleHandleA(lpszNtDllName)))
             {
                 /*lint -save -e611 */
-#               pragma warning(suppress:4055)
+#pragma warning(suppress : 4055)
                 return (FARPROC)(hNtDll);
                 /*lint -restore */
             }
