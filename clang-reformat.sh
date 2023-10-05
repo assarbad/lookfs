@@ -36,7 +36,7 @@ fi
 command find -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.hpp' -o -name '*.c' \) |while read fname; do
 	case "${fname#./}" in
 		# Ignore a bunch of folders
-		bin/* | obj/* | .vs/* | cmocka/* | thirdparty/* ) ;;
+		bin/* | obj/* | .vs/* | cmocka/* | thirdparty/* | Tests/googlemock/* | Tests/googletest/* ) ;;
 		# Only process what remains
 		*)
 			echo -e "Formatting: ${cW}${fname#./}${cZ}"

@@ -58,7 +58,10 @@ BEGIN
 #if defined(HG_REV_ID) && defined(HG_REV_NO)
             VALUE "Mercurial revision", HG_REV_ID " (" ANSISTRING(HG_REV_NO) ")"
 #endif
-#if defined(HG_FULLID)
+#if defined(GIT_COMMIT)
+            VALUE "Git revision", ANSISTRING(GIT_COMMIT)
+#endif
+#if defined(HG_FULLID) && defined(HG_REPOSITORY)
             VALUE "Mercurial revision URL", HG_REPOSITORY "/src/" HG_FULLID
 #endif
 #ifdef HG_REPOSITORY

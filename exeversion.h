@@ -34,9 +34,9 @@
 #define TEXT_WEBSITE           https:/##/assarbad.net // website
 #define TEXT_PRODUCTNAME       lookfs                                         // product's name
 #define TEXT_FILEDESC          Inspects files and other file system artifacts // component description
-#define TEXT_COMPANY           Oliver Schneider(assarbad.net)                 // company
+#define TEXT_COMPANY           Oliver Schneider (assarbad.net)                // company
 #define TEXT_MODULE            lookfs                                         // module name
-#define TEXT_COPYRIGHT         Written EXE_YEAR by TEXT_COMPANY(PUBLIC DOMAIN / CC0)
+#define TEXT_COPYRIGHT         Written EXE_YEAR by TEXT_COMPANY (PUBLIC DOMAIN/CC0)
 #define TEXT_PORTIONSCOPYRIGHT Portions Copyright(c) 2006-2013, Brodie Thiesfield
 #define TEXT_INTERNALNAME      lookfs.exe
 #define HG_REPOSITORY          "https://sourceforge.net/p/lookfs/code/"
