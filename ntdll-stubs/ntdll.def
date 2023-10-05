@@ -1,4 +1,4 @@
-LIBRARY ntdll.dld
+LIBRARY ntdll.dll
 
 EXPORTS
     NtAdjustGroupsToken
